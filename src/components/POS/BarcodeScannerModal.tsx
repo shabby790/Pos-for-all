@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Barcode, CheckCircle, X, Search, AlertCircle, StopCircle, PlayCircle } from 'lucide-react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, CameraDevice } from 'html5-qrcode';
 import { sounds } from '../../utils/sound';
 
 interface BarcodeScannerModalProps {
@@ -14,57 +14,142 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ isOpen
   const [simulatedScanSuccess, setSimulatedScanSuccess] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
 
+  // Explicitly release all media tracks globally if browser allows
+  const releaseAllTracks = () => {
+    try {
+      if (navigator.mediaDevices && (navigator.mediaDevices as any).getDisplayMedia) {
+         // getDisplayMedia is different, we want getUserMedia tracks
+      }
+      // Attempt to clear any hanging streams
+      navigator.mediaDevices.enumerateDevices().then(() => {
+        // Just calling this sometimes helps state reset
+      }).catch(() => {});
+    } catch (e) {
+      console.warn("Manual track release failed", e);
+    }
+  };
+
   useEffect(() => {
-    if (isOpen && isCameraActive) {
+    if (isOpen) {
+      Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length > 0) {
+          setAvailableCameras(cameras);
+          // Prefer back camera / environment
+          const backCamera = cameras.find(c => 
+            c.label.toLowerCase().includes('back') || 
+            c.label.toLowerCase().includes('environment') ||
+            c.label.toLowerCase().includes('rear')
+          );
+          setSelectedCameraId(backCamera ? backCamera.id : cameras[0].id);
+        }
+      }).catch(err => {
+        console.error("Error getting cameras", err);
+      });
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const startScanner = async () => {
+      if (!isOpen || !isCameraActive) return;
+
+      // Ensure previous scanner is stopped and container is clear
+      if (html5QrcodeRef.current) {
+        try {
+          if (html5QrcodeRef.current.isScanning) {
+            await html5QrcodeRef.current.stop();
+          }
+          html5QrcodeRef.current.clear();
+        } catch (e) {
+          console.warn("Error during scanner cleanup:", e);
+        }
+      }
+
+      // Medium delay to allow hardware release
+      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!isMounted) return;
+
       setCameraError(null);
       const scannerId = "html5qr-code-full-region";
       
-      const qrScanner = new Html5Qrcode(scannerId);
-      html5QrcodeRef.current = qrScanner;
+      try {
+        const qrScanner = new Html5Qrcode(scannerId);
+        html5QrcodeRef.current = qrScanner;
 
-      qrScanner.start(
-        { facingMode: "environment" },
-        {
+        const config = {
           fps: 10,
           qrbox: { width: 250, height: 150 },
-        },
-        (decodedText) => {
-          sounds.playBeep();
-          setSimulatedScanSuccess(decodedText);
-          setTimeout(() => {
-            onScan(decodedText);
-            stopCamera();
-            setSimulatedScanSuccess(null);
-            onClose();
-          }, 300);
-        },
-        (errorMessage) => {
-          // ignore transient scan errors frame by frame
-        }
-      ).catch((err) => {
+          aspectRatio: 1.0
+        };
+
+        const cameraId = selectedCameraId || { facingMode: "environment" };
+
+        await qrScanner.start(
+          cameraId,
+          config,
+          (decodedText) => {
+            sounds.playBeep();
+            setSimulatedScanSuccess(decodedText);
+            setTimeout(() => {
+              onScan(decodedText);
+              stopCamera();
+              setSimulatedScanSuccess(null);
+              onClose();
+            }, 300);
+          },
+          () => { /* ignore transient scan errors */ }
+        );
+      } catch (err: any) {
+        if (!isMounted) return;
         console.error("Camera scanner start error:", err);
-        setCameraError("Could not access mobile camera. Please check camera permissions or use hardware scanner / manual entry.");
-        setIsCameraActive(false);
-      });
-
-      return () => {
-        if (qrScanner.isScanning) {
-          qrScanner.stop().catch(console.error);
+        
+        let errorMessage = "Could not access mobile camera. Please check camera permissions or use hardware scanner / manual entry.";
+        const errorStr = String(err.message || err.name || err).toLowerCase();
+        
+        if (errorStr.includes('notreadableerror')) {
+          errorMessage = "Camera is BUSY. Please close other apps (WhatsApp, Instagram) or other browser tabs that might be using the camera, then try again.";
+        } else if (errorStr.includes('notallowederror')) {
+          errorMessage = "Camera permission DENIED. Please allow camera access in browser settings to scan barcodes.";
+        } else if (errorStr.includes('notfounderror')) {
+          errorMessage = "No camera found on this device. Please use a manual barcode scanner or type the code.";
+        } else if (errorStr.includes('overconstrainederror')) {
+          errorMessage = "Camera resolution issue. Try selecting a different camera from the dropdown below.";
         }
-      };
-    }
-  }, [isOpen, isCameraActive]);
 
-  const stopCamera = () => {
-    if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
-      html5QrcodeRef.current.stop().then(() => {
+        setCameraError(errorMessage);
         setIsCameraActive(false);
-      }).catch(err => {
+        releaseAllTracks();
+      }
+    };
+
+    startScanner();
+
+    return () => {
+      isMounted = false;
+      if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
+        html5QrcodeRef.current.stop().catch(() => {});
+      }
+    };
+  }, [isOpen, isCameraActive, selectedCameraId]);
+
+  const stopCamera = async () => {
+    if (html5QrcodeRef.current) {
+      try {
+        if (html5QrcodeRef.current.isScanning) {
+          await html5QrcodeRef.current.stop();
+        }
+        html5QrcodeRef.current.clear();
+      } catch (err) {
         console.error("Failed to stop camera scanner", err);
+      } finally {
         setIsCameraActive(false);
-      });
+        releaseAllTracks();
+      }
     } else {
       setIsCameraActive(false);
     }
@@ -123,7 +208,36 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ isOpen
         {/* Camera Viewfinder & Scanner Section */}
         <div className="relative min-h-[220px] bg-slate-950 border-2 border-dashed border-emerald-500/50 rounded-xl overflow-hidden flex flex-col items-center justify-center p-2 mb-4">
           
-          <div id="html5qr-code-full-region" className={`w-full h-full ${!isCameraActive ? 'hidden' : ''}`} />
+          {isCameraActive && !cameraError && (
+            <div className="relative aspect-[4/3] bg-black rounded-xl overflow-hidden border border-slate-700 shadow-2xl mx-3 w-full">
+              <div id="html5qr-code-full-region" className="w-full h-full" />
+              
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className="w-64 h-40 border-2 border-emerald-500/50 rounded-lg relative">
+                  <div className="absolute inset-0 animate-pulse bg-emerald-500/5"></div>
+                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-emerald-500"></div>
+                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-emerald-500"></div>
+                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-emerald-500"></div>
+                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-emerald-500"></div>
+                  <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-emerald-500/30 animate-scan"></div>
+                </div>
+              </div>
+
+              {availableCameras.length > 1 && (
+                <div className="absolute bottom-3 left-3 right-3 flex justify-center z-30">
+                  <select
+                    value={selectedCameraId || ''}
+                    onChange={(e) => setSelectedCameraId(e.target.value)}
+                    className="bg-slate-900/90 backdrop-blur-md text-emerald-400 text-[10px] px-4 py-2 rounded-full border border-emerald-500/30 outline-none shadow-lg font-bold"
+                  >
+                    {availableCameras.map(camera => (
+                      <option key={camera.id} value={camera.id}>{camera.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
 
           {!isCameraActive && (
             <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
@@ -154,9 +268,32 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ isOpen
           )}
 
           {cameraError && (
-            <div className="m-3 p-3 bg-red-950/80 border border-red-500/40 rounded-xl text-xs text-red-300 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{cameraError}</span>
+            <div className="m-3 p-4 bg-red-950/80 border border-red-500/40 rounded-xl text-xs text-red-300 flex flex-col items-center gap-3 text-center">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 shrink-0 text-red-400" />
+                <span className="leading-relaxed font-medium">{cameraError}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setCameraError(null);
+                    setIsCameraActive(false);
+                    setTimeout(() => setIsCameraActive(true), 200);
+                  }}
+                  className="px-4 py-1.5 bg-red-800 hover:bg-red-700 text-white font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-lg active:scale-95"
+                >
+                  <PlayCircle className="w-3.5 h-3.5" /> Try Again
+                </button>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg transition-colors text-[10px]"
+                >
+                  Refresh Page
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-500 italic mt-1">
+                Tip: Close other tabs or apps using the camera
+              </p>
             </div>
           )}
 
