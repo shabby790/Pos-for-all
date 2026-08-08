@@ -1,0 +1,6 @@
+{
+  "name": "Smart POS Studio - Enterprise Point of Sale System",
+  "description": "Full-featured offline-first POS system with Inventory Management, Barcode Scanner, Sales Analytics, Role-Based Access, Receipts, Multilingual support, AI Insights, and Cloud Backup.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

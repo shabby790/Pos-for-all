@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "products": {
+      "title": "Products",
+      "description": "Store inventory products list",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "barcode": { "type": "string" },
+        "name": { "type": "string" },
+        "nameUrdu": { "type": "string" },
+        "category": { "type": "string" },
+        "buyPrice": { "type": "number" },
+        "sellPrice": { "type": "number" },
+        "stockQuantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "reorderLevel": { "type": "number" },
+        "image": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "barcode", "name", "category", "buyPrice", "sellPrice", "stockQuantity"]
+    },
+    "categories": {
+      "title": "Categories",
+      "description": "Product categories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "icon": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "sales": {
+      "title": "Sales",
+      "description": "POS Checkout Sales Transactions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "discountAmount": { "type": "number" },
+        "taxAmount": { "type": "number" },
+        "grandTotal": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "cashierId": { "type": "string" },
+        "cashierName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "orderNumber", "items", "grandTotal", "createdAt"]
+    },
+    "customers": {
+      "title": "Customers",
+      "description": "Customer profiles and Udhaar balance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "totalSpent": { "type": "number" },
+        "outstandingBalance": { "type": "number" },
+        "loyaltyPoints": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "phone"]
+    },
+    "heldCarts": {
+      "title": "Held Carts",
+      "description": "Pending bill held carts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerName": { "type": "string" },
+        "note": { "type": "string" },
+        "items": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "items", "createdAt"]
+    },
+    "users": {
+      "title": "Staff Users",
+      "description": "Staff cashier accounts and RBAC roles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "pin": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "pin"]
+    },
+    "settings": {
+      "title": "Store Settings",
+      "description": "Global POS configurations",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string" },
+        "tagline": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "ntnGst": { "type": "string" },
+        "currencySymbol": { "type": "string" },
+        "paperSize": { "type": "string" },
+        "receiptHeader": { "type": "string" },
+        "receiptFooter": { "type": "string" },
+        "taxRatePercent": { "type": "number" }
+      }
+    }
+  }
+}
