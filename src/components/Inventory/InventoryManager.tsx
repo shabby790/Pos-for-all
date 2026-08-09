@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { usePOS } from '../../context/POSContext';
 import { t } from '../../utils/i18n';
+import { generateBarcodeBars, generateBarcodeSvgString } from '../../utils/barcodeGenerator';
 import {
   Package,
   Plus,
@@ -16,7 +17,11 @@ import {
   TrendingUp,
   DollarSign,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  CheckSquare,
+  Square,
+  Copy,
+  LayoutGrid
 } from 'lucide-react';
 import { Category, Product } from '../../types';
 
@@ -38,6 +43,191 @@ export const InventoryManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'barcode_sheet'>('products');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Barcode Sheet Print Options State
+  const [selectedBarcodeProdIds, setSelectedBarcodeProdIds] = useState<string[]>([]);
+  const [copiesMode, setCopiesMode] = useState<'1' | '2' | '4' | 'stock'>('1');
+  const [paperLayout, setPaperLayout] = useState<'a4_3col' | 'a4_4col' | 'thermal_single'>('a4_3col');
+  const [showMainSuggestions, setShowMainSuggestions] = useState(false);
+  const [showSheetSuggestions, setShowSheetSuggestions] = useState(false);
+
+  // Select / Deselect All products for barcode sheet
+  const handleToggleSelectAllBarcodes = () => {
+    if (selectedBarcodeProdIds.length === products.length) {
+      setSelectedBarcodeProdIds([]);
+    } else {
+      setSelectedBarcodeProdIds(products.map(p => p.id));
+    }
+  };
+
+  const handleToggleBarcodeProd = (id: string) => {
+    if (selectedBarcodeProdIds.includes(id)) {
+      setSelectedBarcodeProdIds(prev => prev.filter(pId => pId !== id));
+    } else {
+      setSelectedBarcodeProdIds(prev => [...prev, id]);
+    }
+  };
+
+  // Robust Print Barcode Sheet function
+  const handlePrintBarcodes = () => {
+    // If none explicitly toggled, print all
+    const targetProds = selectedBarcodeProdIds.length > 0
+      ? products.filter(p => selectedBarcodeProdIds.includes(p.id))
+      : products;
+
+    if (targetProds.length === 0) {
+      alert('Please select at least one product to print barcodes.');
+      return;
+    }
+
+    // Generate list of items according to copies mode
+    const stickerList: Product[] = [];
+    targetProds.forEach(p => {
+      let count = 1;
+      if (copiesMode === '2') count = 2;
+      if (copiesMode === '4') count = 4;
+      if (copiesMode === 'stock') count = Math.max(1, Math.min(p.stockQuantity, 100));
+
+      for (let i = 0; i < count; i++) {
+        stickerList.push(p);
+      }
+    });
+
+    const gridStyle = paperLayout === 'a4_4col'
+      ? 'grid-template-columns: repeat(4, 1fr);'
+      : paperLayout === 'thermal_single'
+      ? 'grid-template-columns: 1fr; width: 60mm; margin: 0 auto;'
+      : 'grid-template-columns: repeat(3, 1fr);';
+
+    const stickersHtml = stickerList.map(p =>
+      generateBarcodeSvgString(
+        p.barcode || p.sku,
+        settings.storeName,
+        p.name,
+        `${settings.currencySymbol} ${p.sellPrice}`
+      )
+    ).join('');
+
+    const printDocHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Barcode Sticker Sheet - ${settings.storeName}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      background: #ffffff;
+      color: #000000;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .no-print-bar {
+      margin-bottom: 16px;
+      text-align: center;
+      padding: 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+    }
+    .print-btn {
+      padding: 10px 24px;
+      background: #059669;
+      color: #ffffff;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .sticker-grid {
+      display: grid;
+      ${gridStyle}
+      gap: 10px;
+      width: 100%;
+    }
+    @media print {
+      body {
+        padding: 0;
+      }
+      .no-print-bar {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print-bar">
+    <button class="print-btn" onclick="window.print()">
+      🖨️ Click Here to Print Barcode Stickers (${stickerList.length} Stickers)
+    </button>
+  </div>
+  <div class="sticker-grid">
+    ${stickersHtml}
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.focus();
+        window.print();
+      }, 400);
+    };
+  </script>
+</body>
+</html>`;
+
+    // 1. Attempt window.open popup first
+    let printWindow: Window | null = null;
+    try {
+      printWindow = window.open('', '_blank', 'width=950,height=800');
+    } catch (e) {
+      console.warn('Popup blocked, falling back to hidden iframe', e);
+    }
+
+    if (printWindow && !printWindow.closed) {
+      printWindow.document.open();
+      printWindow.document.write(printDocHtml);
+      printWindow.document.close();
+    } else {
+      // 2. Fallback: Create dynamic hidden print iframe
+      let iframe = document.getElementById('barcode-sticker-print-frame') as HTMLIFrameElement;
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'barcode-sticker-print-frame';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.border = 'none';
+        iframe.style.zIndex = '-9999';
+        document.body.appendChild(iframe);
+      }
+
+      const frameDoc = iframe.contentWindow?.document || iframe.contentDocument;
+      if (frameDoc) {
+        frameDoc.open();
+        frameDoc.write(printDocHtml);
+        frameDoc.close();
+        setTimeout(() => {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        }, 500);
+      } else {
+        // Last fallback: replace window location or alert
+        alert('Please allow popups for this site to print barcode sheets.');
+      }
+    }
+  };
 
   // Product Modal State
   const [isProdModalOpen, setIsProdModalOpen] = useState(false);
@@ -267,11 +457,88 @@ export const InventoryManager: React.FC = () => {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
+                  list="inventory-products-datalist"
                   value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                  onChange={e => {
+                    setSearchQuery(e.target.value);
+                    setShowMainSuggestions(true);
+                  }}
+                  onFocus={() => setShowMainSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowMainSuggestions(false), 200)}
                   placeholder="Filter by product name, SKU or barcode..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-8 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowMainSuggestions(false);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {/* HTML5 Datalist for native keyboard suggestions */}
+                <datalist id="inventory-products-datalist">
+                  {products.map(p => (
+                    <option key={p.id} value={p.barcode || p.sku}>
+                      {p.name} - {settings.currencySymbol}{p.sellPrice}
+                    </option>
+                  ))}
+                </datalist>
+
+                {/* Live Auto-Suggestion Floating Dropdown */}
+                {showMainSuggestions && searchQuery.trim().length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-800">
+                    {products
+                      .filter(p =>
+                        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.barcode.includes(searchQuery) ||
+                        p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (p.nameUrdu && p.nameUrdu.includes(searchQuery))
+                      )
+                      .slice(0, 8)
+                      .map(p => (
+                        <div
+                          key={p.id}
+                          onMouseDown={() => {
+                            setSearchQuery(p.barcode || p.name);
+                            setShowMainSuggestions(false);
+                          }}
+                          className="p-2.5 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs transition-colors"
+                        >
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <img
+                              src={p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'}
+                              alt=""
+                              className="w-7 h-7 rounded bg-slate-950 object-cover shrink-0"
+                            />
+                            <div className="truncate">
+                              <p className="font-bold text-slate-200 truncate">{p.name}</p>
+                              <p className="text-[10px] text-emerald-400 font-mono">
+                                BC: <span className="font-bold">{p.barcode}</span> | SKU: {p.sku}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0 ml-2">
+                            <p className="font-bold text-emerald-400">{settings.currencySymbol}{p.sellPrice}</p>
+                            <p className="text-[10px] text-slate-400">{p.stockQuantity} in stock</p>
+                          </div>
+                        </div>
+                      ))}
+                    {products.filter(p =>
+                      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      p.barcode.includes(searchQuery) ||
+                      p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+                    ).length === 0 && (
+                      <div className="p-3 text-center text-slate-400 text-xs">
+                        No matching product or barcode found
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <select
@@ -480,38 +747,256 @@ export const InventoryManager: React.FC = () => {
 
       {/* TAB 3: BARCODE STICKER SHEET GENERATOR */}
       {activeTab === 'barcode_sheet' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
             <div>
-              <h3 className="font-bold text-base text-emerald-400">Printable Barcode Sticker Sheets</h3>
-              <p className="text-xs text-slate-400">Generate EAN/Code128 barcodes for shelf tagging and product stickers</p>
+              <h3 className="font-bold text-base text-emerald-400 flex items-center gap-2">
+                <Barcode className="w-5 h-5" /> Printable Barcode Sticker Sheets
+              </h3>
+              <p className="text-xs text-slate-400">
+                Generate and print shelf tags & sticker barcodes for your inventory items
+              </p>
             </div>
-            <button
-              onClick={() => window.print()}
-              className="px-4 py-2 bg-emerald-500 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5"
-            >
-              <Printer className="w-4 h-4" /> Print Barcode Sheet
-            </button>
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleToggleSelectAllBarcodes}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors"
+              >
+                {selectedBarcodeProdIds.length === products.length ? (
+                  <>
+                    <CheckSquare className="w-4 h-4 text-emerald-400" /> Deselect All
+                  </>
+                ) : (
+                  <>
+                    <Square className="w-4 h-4 text-slate-400" /> Select All ({products.length})
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrintBarcodes}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+              >
+                <Printer className="w-4 h-4" /> Print Barcode Sheet
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
-            {products.map(p => (
-              <div key={p.id} className="bg-white text-slate-900 p-3 rounded-xl text-center border border-slate-300 font-mono shadow-sm">
-                <p className="font-bold text-[11px] truncate">{p.name}</p>
-                <p className="text-[10px] font-sans font-bold text-emerald-700">{settings.currencySymbol} {p.sellPrice}</p>
-                
-                {/* SVG Barcode bars */}
-                <div className="my-1.5 flex justify-center">
-                  <div className="h-8 flex items-center gap-0.5">
-                    {[2,1,3,1,2,2,1,3,1,2,1,2,3,1].map((w, i) => (
-                      <span key={i} className="bg-slate-950 h-6" style={{ width: `${w * 1.5}px` }} />
-                    ))}
-                  </div>
-                </div>
+          {/* Options & Filter Bar */}
+          <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label className="block text-slate-400 font-bold mb-1 flex items-center gap-1.5">
+                <Copy className="w-3.5 h-3.5 text-emerald-400" /> Stickers Per Item
+              </label>
+              <select
+                value={copiesMode}
+                onChange={e => setCopiesMode(e.target.value as any)}
+                className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 font-medium focus:outline-none focus:border-emerald-500"
+              >
+                <option value="1">1 Sticker per product</option>
+                <option value="2">2 Stickers per product</option>
+                <option value="4">4 Stickers per product</option>
+                <option value="stock">Match Stock Quantity (e.g. 15 stock = 15 stickers)</option>
+              </select>
+            </div>
 
-                <p className="text-[9px] font-semibold text-slate-600 tracking-wider">{p.barcode}</p>
-              </div>
-            ))}
+            <div>
+              <label className="block text-slate-400 font-bold mb-1 flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5 text-cyan-400" /> Sheet / Paper Format
+              </label>
+              <select
+                value={paperLayout}
+                onChange={e => setPaperLayout(e.target.value as any)}
+                className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 font-medium focus:outline-none focus:border-emerald-500"
+              >
+                <option value="a4_3col">A4 Paper (3 Columns Grid)</option>
+                <option value="a4_4col">A4 Paper (4 Columns Grid)</option>
+                <option value="thermal_single">Thermal Sticker Roll (Single Column - 50x30mm)</option>
+              </select>
+            </div>
+
+            <div className="relative">
+              <label className="block text-slate-400 font-bold mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Search className="w-3.5 h-3.5 text-amber-400" /> Filter Barcodes
+                </span>
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowSheetSuggestions(false);
+                    }}
+                    className="text-[10px] text-slate-400 hover:text-white"
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </label>
+              <input
+                type="text"
+                list="barcode-sheet-datalist"
+                placeholder="Search by name, SKU or code..."
+                value={searchQuery}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
+                  setShowSheetSuggestions(true);
+                }}
+                onFocus={() => setShowSheetSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSheetSuggestions(false), 200)}
+                className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 font-medium focus:outline-none focus:border-emerald-500"
+              />
+
+              {/* Native datalist suggestions */}
+              <datalist id="barcode-sheet-datalist">
+                {products.map(p => (
+                  <option key={p.id} value={p.barcode || p.sku}>
+                    {p.name}
+                  </option>
+                ))}
+              </datalist>
+
+              {/* Interactive suggestion popover overlay */}
+              {showSheetSuggestions && searchQuery.trim().length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-800">
+                  {products
+                    .filter(p =>
+                      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      p.barcode.includes(searchQuery) ||
+                      p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (p.nameUrdu && p.nameUrdu.includes(searchQuery))
+                    )
+                    .slice(0, 8)
+                    .map(p => (
+                      <div
+                        key={p.id}
+                        onMouseDown={() => {
+                          setSearchQuery(p.barcode || p.name);
+                          setShowSheetSuggestions(false);
+                        }}
+                        className="p-2.5 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs transition-colors"
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <img
+                            src={p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'}
+                            alt=""
+                            className="w-7 h-7 rounded bg-slate-950 object-cover shrink-0"
+                          />
+                          <div className="truncate">
+                            <p className="font-bold text-slate-100 truncate">{p.name}</p>
+                            <p className="text-[10px] text-amber-400 font-mono">
+                              BC: <span className="font-bold">{p.barcode}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="font-bold text-emerald-400">{settings.currencySymbol}{p.sellPrice}</p>
+                        </div>
+                      </div>
+                    ))}
+                  {products.filter(p =>
+                    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.barcode.includes(searchQuery) ||
+                    p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).length === 0 && (
+                    <div className="p-3 text-center text-slate-400 text-xs">
+                      No matching barcode or product
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Barcode Stickers Grid Preview */}
+          <div id="printable-barcode-sheet" className="pt-2">
+            <div className={`grid ${
+              paperLayout === 'a4_4col'
+                ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
+                : paperLayout === 'thermal_single'
+                ? 'grid-cols-1 max-w-xs mx-auto'
+                : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
+            } gap-4`}>
+              {products
+                .filter(p => 
+                  !searchQuery || 
+                  p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  p.barcode.includes(searchQuery) || 
+                  p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map(p => {
+                  const isSelected = selectedBarcodeProdIds.length === 0 || selectedBarcodeProdIds.includes(p.id);
+                  const cleanCode = p.barcode || p.sku;
+                  const bars = generateBarcodeBars(cleanCode);
+                  const totalUnits = bars.reduce((a, b) => a + b, 0);
+
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleToggleBarcodeProd(p.id)}
+                      className={`relative bg-white text-slate-950 p-3 rounded-xl border-2 transition-all cursor-pointer font-sans shadow-md select-none ${
+                        isSelected
+                          ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+                          : 'border-slate-300 opacity-40 grayscale'
+                      }`}
+                    >
+                      <div className="absolute top-2 right-2 no-print">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleBarcodeProd(p.id)}
+                          className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="text-center space-y-1">
+                        <p className="font-extrabold text-[10px] text-slate-800 uppercase tracking-tight truncate pr-5">
+                          {settings.storeName || 'STORE'}
+                        </p>
+                        <p className="font-bold text-[11px] text-slate-900 truncate">
+                          {p.name}
+                        </p>
+                        <p className="text-[12px] font-black text-emerald-700">
+                          {settings.currencySymbol} {p.sellPrice}
+                        </p>
+
+                        {/* Crisp SVG Barcode Bars */}
+                        <div className="my-2 flex justify-center w-full px-1">
+                          <svg
+                            viewBox={`0 0 ${totalUnits} 36`}
+                            className="w-full h-9 max-w-[180px] display-block"
+                          >
+                            {(() => {
+                              let currX = 0;
+                              return bars.map((w, idx) => {
+                                const isBlack = idx % 2 === 0;
+                                const rect = isBlack ? (
+                                  <rect
+                                    key={idx}
+                                    x={currX}
+                                    y={0}
+                                    width={w}
+                                    height={36}
+                                    fill="#000000"
+                                  />
+                                ) : null;
+                                currX += w;
+                                return rect;
+                              });
+                            })()}
+                          </svg>
+                        </div>
+
+                        <p className="text-[10px] font-mono font-bold text-slate-700 tracking-wider">
+                          {cleanCode}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         </div>
       )}

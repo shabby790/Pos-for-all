@@ -112,7 +112,7 @@ export interface HoldCart {
 export interface StoreSettings {
   storeName: string;
   tagline: string;
-  businessType?: 'supermarket' | 'garments' | 'pharmacy' | 'bakery' | 'spare_parts' | 'jewellery' | 'electronics' | 'hardware' | 'cosmetics' | 'beverages' | 'mobiles_accessories' | 'computers_laptops';
+  businessType?: 'supermarket' | 'garments' | 'pharmacy' | 'bakery' | 'spare_parts' | 'jewellery' | 'electronics' | 'hardware' | 'cosmetics' | 'beverages' | 'mobiles_accessories' | 'computers_laptops' | 'solar_shop';
   address: string;
   phone: string;
   email: string;

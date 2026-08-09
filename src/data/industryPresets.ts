@@ -851,5 +851,147 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         reorderLevel: 2
       }
     ]
+  },
+
+  solar_shop: {
+    name: 'Pak Solar Energy Solutions & Solar Shop',
+    tagline: 'Tier-1 Solar Panels, Hybrid Inverters, Lithium Batteries & Net-Metering Accessories',
+    categories: [
+      { id: 'cat_solar_panels', name: 'Solar Panels & PV Modules', nameUrdu: 'سولر پینلز / پلیٹس', icon: 'Sun', color: 'text-amber-400' },
+      { id: 'cat_solar_inverters', name: 'Hybrid & On-Grid Inverters', nameUrdu: 'سولر انورٹر اور یو پی ایس', icon: 'Zap', color: 'text-cyan-400' },
+      { id: 'cat_solar_batteries', name: 'Lithium & Tubular Batteries', nameUrdu: 'لیتھیم اور ٹیوبلر بیٹریاں', icon: 'BatteryCharging', color: 'text-emerald-400' },
+      { id: 'cat_solar_accessories', name: 'Cables, Breakers & Mounting Frames', nameUrdu: 'ڈی سی وائر، فریم اور بریکرز', icon: 'Wrench', color: 'text-purple-400' }
+    ],
+    products: [
+      {
+        id: 'p_sol_1',
+        name: 'Longi Hi-MO 6 Mono PERC 585W Panel',
+        nameUrdu: 'لونگی 585 واٹ سولر پینل',
+        category: 'cat_solar_panels',
+        sku: 'SOLAR-LONGI-585W',
+        barcode: '896400120101',
+        buyPrice: 21500,
+        sellPrice: 24800,
+        stockQuantity: 35,
+        unit: 'Pcs',
+        reorderLevel: 10,
+        image: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=300&auto=format&fit=crop&q=80',
+        description: 'Tier-1 Mono PERC High Efficiency 585W Panel with 12 Years Warranty'
+      },
+      {
+        id: 'p_sol_2',
+        name: 'Jinko Tiger Neo N-Type 575W Panel',
+        nameUrdu: 'جنکو 575 واٹ این ٹائپ پینل',
+        category: 'cat_solar_panels',
+        sku: 'SOLAR-JINKO-575W',
+        barcode: '896400120102',
+        buyPrice: 20200,
+        sellPrice: 23500,
+        stockQuantity: 28,
+        unit: 'Pcs',
+        reorderLevel: 8,
+        image: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?w=300&auto=format&fit=crop&q=80',
+        description: 'N-Type Bifacial High Power Density Solar PV Module'
+      },
+      {
+        id: 'p_sol_3',
+        name: 'Inverex Nitrox 6kW Hybrid Solar Inverter (Dual MPPT)',
+        nameUrdu: 'انوریکس نائٹروکس 6 کلوواٹ انورٹر',
+        category: 'cat_solar_inverters',
+        sku: 'INV-NITROX-6KW',
+        barcode: '896400120103',
+        buyPrice: 285000,
+        sellPrice: 315000,
+        stockQuantity: 8,
+        unit: 'Pcs',
+        reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1558441719-6772422c5476?w=300&auto=format&fit=crop&q=80',
+        description: 'IP65 Rated 6kW Dual MPPT Hybrid On-Grid / Off-Grid Inverter'
+      },
+      {
+        id: 'p_sol_4',
+        name: 'Crown Elego 3.2kW Pure Sine Wave Solar Inverter',
+        nameUrdu: 'کراؤن 3.2 کلوواٹ انورٹر',
+        category: 'cat_solar_inverters',
+        sku: 'INV-CROWN-3.2KW',
+        barcode: '896400120104',
+        buyPrice: 102000,
+        sellPrice: 118000,
+        stockQuantity: 12,
+        unit: 'Pcs',
+        reorderLevel: 3,
+        description: '3.2kW Solar Inverter with Built-in 80A MPPT Charge Controller'
+      },
+      {
+        id: 'p_sol_5',
+        name: 'Narada 48V 100Ah Lithium Battery Pack 5kWh',
+        nameUrdu: 'ناراڈا 5 کلوواٹ لیتھیم بیٹری',
+        category: 'cat_solar_batteries',
+        sku: 'BAT-NARADA-5KWH',
+        barcode: '896400120105',
+        buyPrice: 340000,
+        sellPrice: 385000,
+        stockQuantity: 6,
+        unit: 'Pcs',
+        reorderLevel: 2,
+        description: 'LiFePO4 Wall Mount 6000 Cycles High Life Lithium Battery'
+      },
+      {
+        id: 'p_sol_6',
+        name: 'Phoenix Deep Cycle Tubular Battery 230Ah (TR-2500)',
+        nameUrdu: 'فینکس ٹیوبلر بیٹری 230 ایمپیئر',
+        category: 'cat_solar_batteries',
+        sku: 'BAT-PHOENIX-TR2500',
+        barcode: '896400120106',
+        buyPrice: 48000,
+        sellPrice: 54500,
+        stockQuantity: 18,
+        unit: 'Pcs',
+        reorderLevel: 4,
+        description: 'Heavy Duty Deep Cycle Flooded Battery for Solar & Backup'
+      },
+      {
+        id: 'p_sol_7',
+        name: 'Pure Copper DC Solar Cable 6mm (100 Meter Roll)',
+        nameUrdu: 'ڈی سی کاپر وائر 6 ایم ایم رول',
+        category: 'cat_solar_accessories',
+        sku: 'CABLE-DC-6MM-100M',
+        barcode: '896400120107',
+        buyPrice: 18500,
+        sellPrice: 22500,
+        stockQuantity: 14,
+        unit: 'Roll',
+        reorderLevel: 3,
+        description: 'Pure Tinned Copper UV Weather Resistant Double Insulated Cable'
+      },
+      {
+        id: 'p_sol_8',
+        name: 'Galvanized GI Mounting Structure (L3 Frame)',
+        nameUrdu: 'سولر فریم اور سٹرکچر',
+        category: 'cat_solar_accessories',
+        sku: 'FRAME-GI-L3',
+        barcode: '896400120108',
+        buyPrice: 6800,
+        sellPrice: 8900,
+        stockQuantity: 25,
+        unit: 'Set',
+        reorderLevel: 5,
+        description: 'Rustproof Hot-Dip Galvanized Heavy Iron Stand for 3 Panels'
+      },
+      {
+        id: 'p_sol_9',
+        name: 'TOMZN 63A DC Breaker + SPD Surge Protector Box',
+        nameUrdu: 'ڈی سی سیفٹی بریکر باکس',
+        category: 'cat_solar_accessories',
+        sku: 'PROT-DC-BOX-63A',
+        barcode: '896400120109',
+        buyPrice: 3200,
+        sellPrice: 4800,
+        stockQuantity: 30,
+        unit: 'Box',
+        reorderLevel: 8,
+        description: 'Complete Distribution Box with DC Circuit Breaker & Lightning Protector'
+      }
+    ]
   }
 };

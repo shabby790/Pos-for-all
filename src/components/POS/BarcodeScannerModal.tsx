@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Barcode, CheckCircle, X, Search, AlertCircle, StopCircle, PlayCircle } from 'lucide-react';
 import { Html5Qrcode, CameraDevice } from 'html5-qrcode';
 import { sounds } from '../../utils/sound';
+import { usePOS } from '../../context/POSContext';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface BarcodeScannerModalProps {
 }
 
 export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ isOpen, onClose, onScan }) => {
+  const { products } = usePOS();
   const [manualCode, setManualCode] = useState('');
   const [simulatedScanSuccess, setSimulatedScanSuccess] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -315,12 +317,20 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({ isOpen
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
+                list="modal-barcode-suggestions"
                 value={manualCode}
                 onChange={e => setManualCode(e.target.value)}
                 placeholder="Scan or type barcode (e.g. 896400010101)..."
                 autoFocus
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 font-mono"
               />
+              <datalist id="modal-barcode-suggestions">
+                {products.map(p => (
+                  <option key={p.id} value={p.barcode || p.sku}>
+                    {p.name}
+                  </option>
+                ))}
+              </datalist>
             </div>
             <button
               type="submit"

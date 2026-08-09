@@ -18,3 +18,41 @@ html, body {
   overflow-x: hidden;
   background-color: #020617;
 }
+
+/* Printable Media Styles */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+  }
+
+  #root > *:not(#printable-barcode-sheet) {
+    display: none !important;
+  }
+
+  /* Hide app navigation headers, sidebars, modals if printing current window */
+  .no-print, header, nav, aside, button, .modal-backdrop {
+    display: none !important;
+  }
+
+  #printable-barcode-sheet {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 10px !important;
+  }
+
+  .sticker-card {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}
+
