@@ -21,9 +21,11 @@ import {
   CheckSquare,
   Square,
   Copy,
-  LayoutGrid
+  LayoutGrid,
+  Sparkles
 } from 'lucide-react';
 import { Category, Product } from '../../types';
+import { industryTemplates } from '../../data/industryPresets';
 
 export const InventoryManager: React.FC = () => {
   const {
@@ -50,6 +52,54 @@ export const InventoryManager: React.FC = () => {
   const [paperLayout, setPaperLayout] = useState<'a4_3col' | 'a4_4col' | 'thermal_single'>('a4_3col');
   const [showMainSuggestions, setShowMainSuggestions] = useState(false);
   const [showSheetSuggestions, setShowSheetSuggestions] = useState(false);
+  const [showTitleSuggestions, setShowTitleSuggestions] = useState(false);
+
+  // Auto-suggestion catalog built from current industry preset, all presets, and existing items
+  const allPresetProducts = React.useMemo(() => {
+    const map = new Map<string, Product>();
+    // 1. Current business preset first
+    const currentKey = settings.businessType || 'supermarket';
+    if (industryTemplates[currentKey]) {
+      industryTemplates[currentKey].products.forEach(p => map.set(p.name.toLowerCase(), p));
+    }
+    // 2. All industry templates
+    Object.values(industryTemplates).forEach(tmpl => {
+      tmpl.products.forEach(p => {
+        if (!map.has(p.name.toLowerCase())) {
+          map.set(p.name.toLowerCase(), p);
+        }
+      });
+    });
+    // 3. Existing inventory products
+    products.forEach(p => {
+      if (!map.has(p.name.toLowerCase())) {
+        map.set(p.name.toLowerCase(), p);
+      }
+    });
+    return Array.from(map.values());
+  }, [settings.businessType, products]);
+
+  const applyProductSuggestion = (sugg: Product) => {
+    const matchingCat = categories.find(c =>
+      c.name.toLowerCase().includes(sugg.category?.toLowerCase() || '') ||
+      c.id === sugg.category ||
+      (sugg.category && sugg.category.toLowerCase().includes(c.name.toLowerCase()))
+    );
+
+    setFormData(prev => ({
+      ...prev,
+      name: sugg.name,
+      nameUrdu: sugg.nameUrdu || prev.nameUrdu,
+      buyPrice: sugg.buyPrice ?? prev.buyPrice,
+      sellPrice: sugg.sellPrice ?? prev.sellPrice,
+      unit: sugg.unit || prev.unit,
+      reorderLevel: sugg.reorderLevel ?? prev.reorderLevel,
+      image: sugg.image || prev.image,
+      description: sugg.description || prev.description,
+      category: matchingCat ? matchingCat.id : (categories[0]?.id || prev.category)
+    }));
+    setShowTitleSuggestions(false);
+  };
 
   // Select / Deselect All products for barcode sheet
   const handleToggleSelectAllBarcodes = () => {
@@ -1022,18 +1072,110 @@ export const InventoryManager: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
+              
+              {/* Quick Smart Suggestions Chips */}
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-amber-400 font-bold flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" /> ✨ Quick Product Suggestions (Type or Click)
+                  </span>
+                  <span className="text-slate-500 text-[10px]">Auto-fills prices, Urdu & details</span>
+                </div>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {allPresetProducts.slice(0, 10).map((sugg, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => applyProductSuggestion(sugg)}
+                      className="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 rounded-lg text-[10px] text-slate-200 font-semibold transition-all whitespace-nowrap flex items-center gap-1 shrink-0 cursor-pointer"
+                    >
+                      <span className="text-emerald-400 font-bold">+</span>
+                      <span className="truncate max-w-[120px]">{sugg.name}</span>
+                      <span className="text-emerald-400 font-mono">({settings.currencySymbol}{sugg.sellPrice})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Product Title (English) *</label>
+                <div className="relative">
+                  <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+                    <span>Product Title (English) *</span>
+                    {formData.name && (
+                      <span className="text-[10px] text-emerald-400 font-normal">Type for suggestions</span>
+                    )}
+                  </label>
                   <input
                     type="text"
                     required
+                    list="modal-product-title-datalist"
                     value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    onChange={e => {
+                      setFormData({ ...formData, name: e.target.value });
+                      setShowTitleSuggestions(true);
+                    }}
+                    onFocus={() => setShowTitleSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowTitleSuggestions(false), 200)}
                     placeholder="e.g. Nestle Milkpak 1L"
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
                   />
+
+                  {/* Native HTML5 Datalist */}
+                  <datalist id="modal-product-title-datalist">
+                    {allPresetProducts.map((p, idx) => (
+                      <option key={idx} value={p.name}>
+                        {p.nameUrdu ? `${p.nameUrdu} - ` : ''}{settings.currencySymbol}{p.sellPrice}
+                      </option>
+                    ))}
+                  </datalist>
+
+                  {/* Interactive floating suggestion list */}
+                  {showTitleSuggestions && formData.name.trim().length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto divide-y divide-slate-800">
+                      {allPresetProducts
+                        .filter(p =>
+                          p.name.toLowerCase().includes(formData.name.toLowerCase()) ||
+                          (p.nameUrdu && p.nameUrdu.includes(formData.name)) ||
+                          p.sku.toLowerCase().includes(formData.name.toLowerCase())
+                        )
+                        .slice(0, 8)
+                        .map((sugg, idx) => (
+                          <div
+                            key={idx}
+                            onMouseDown={() => applyProductSuggestion(sugg)}
+                            className="p-2 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs transition-colors"
+                          >
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <img
+                                src={sugg.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'}
+                                alt=""
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100';
+                                }}
+                                className="w-7 h-7 rounded bg-slate-950 object-cover shrink-0"
+                              />
+                              <div className="truncate">
+                                <p className="font-bold text-slate-100 truncate">{sugg.name}</p>
+                                {sugg.nameUrdu && <p className="text-[10px] text-emerald-400 dir-rtl truncate">{sugg.nameUrdu}</p>}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0 ml-2">
+                              <span className="text-[10px] text-slate-400 block font-mono">Buy: {settings.currencySymbol}{sugg.buyPrice}</span>
+                              <span className="font-bold text-emerald-400 block">Sell: {settings.currencySymbol}{sugg.sellPrice}</span>
+                            </div>
+                          </div>
+                        ))}
+                      {allPresetProducts.filter(p =>
+                        p.name.toLowerCase().includes(formData.name.toLowerCase()) ||
+                        (p.nameUrdu && p.nameUrdu.includes(formData.name))
+                      ).length === 0 && (
+                        <div className="p-2.5 text-center text-slate-400 text-[11px]">
+                          No matching preset found. Enter custom details.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
