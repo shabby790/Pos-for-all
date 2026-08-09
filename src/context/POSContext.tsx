@@ -87,6 +87,21 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+export function sanitizeForFirestore<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeForFirestore(item)) as unknown as T;
+  }
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = typeof value === 'object' && value !== null ? sanitizeForFirestore(value) : value;
+    }
+  }
+  return result as T;
+}
+
 interface POSContextType {
   // State
   language: Language;
@@ -239,7 +254,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setProducts(prods);
       } else if (snapshot.empty) {
         initialProducts.forEach(p => {
-          setDoc(doc(db, 'products', p.id), p).catch(() => {});
+          setDoc(doc(db, 'products', p.id), sanitizeForFirestore(p)).catch(() => {});
         });
         setProducts(initialProducts);
       }
@@ -253,7 +268,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCategories(cats);
       } else if (snapshot.empty) {
         initialCategories.forEach(c => {
-          setDoc(doc(db, 'categories', c.id), c).catch(() => {});
+          setDoc(doc(db, 'categories', c.id), sanitizeForFirestore(c)).catch(() => {});
         });
         setCategories(initialCategories);
       }
@@ -266,7 +281,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCustomers(custs);
       } else if (snapshot.empty) {
         initialCustomers.forEach(c => {
-          setDoc(doc(db, 'customers', c.id), c).catch(() => {});
+          setDoc(doc(db, 'customers', c.id), sanitizeForFirestore(c)).catch(() => {});
         });
         setCustomers(initialCustomers);
       }
@@ -279,7 +294,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSales(salesHistory);
       } else if (snapshot.empty) {
         initialSalesHistory.forEach(s => {
-          setDoc(doc(db, 'sales', s.id), s).catch(() => {});
+          setDoc(doc(db, 'sales', s.id), sanitizeForFirestore(s)).catch(() => {});
         });
         setSales(initialSalesHistory);
       }
@@ -289,7 +304,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (snapshot.exists()) {
         setSettings(snapshot.data() as StoreSettings);
       } else {
-        setDoc(doc(db, 'settings', 'store_config'), initialStoreSettings).catch(() => {});
+        setDoc(doc(db, 'settings', 'store_config'), sanitizeForFirestore(initialStoreSettings)).catch(() => {});
         setSettings(initialStoreSettings);
       }
     }, (error) => handleFirestoreError(error, OperationType.GET, 'settings/store_config'));
@@ -301,7 +316,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUsersList(users);
       } else if (snapshot.empty) {
         initialUsers.forEach(u => {
-          setDoc(doc(db, 'users', u.id), u).catch(() => {});
+          setDoc(doc(db, 'users', u.id), sanitizeForFirestore(u)).catch(() => {});
         });
         setUsersList(initialUsers);
       }
@@ -639,7 +654,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Save sale
-    batch.set(doc(db, 'sales', newSale.id), newSale);
+    batch.set(doc(db, 'sales', newSale.id), sanitizeForFirestore(newSale));
 
     batch.commit()
       .then(() => {
@@ -700,7 +715,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const id = 'prod_' + Date.now();
     const newProd: Product = { ...prodData, id };
     try {
-      await setDoc(doc(db, 'products', id), newProd);
+      await setDoc(doc(db, 'products', id), sanitizeForFirestore(newProd));
       addNotification('Product Added', `${newProd.name} added to cloud inventory.`, 'system');
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `products/${id}`);
@@ -709,7 +724,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateProduct = async (prod: Product) => {
     try {
-      await setDoc(doc(db, 'products', prod.id), prod);
+      await setDoc(doc(db, 'products', prod.id), sanitizeForFirestore(prod));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `products/${prod.id}`);
     }
@@ -739,7 +754,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const id = 'cat_' + Date.now();
     const newCat: Category = { ...catData, id };
     try {
-      await setDoc(doc(db, 'categories', id), newCat);
+      await setDoc(doc(db, 'categories', id), sanitizeForFirestore(newCat));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `categories/${id}`);
     }
@@ -747,7 +762,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateCategory = async (cat: Category) => {
     try {
-      await setDoc(doc(db, 'categories', cat.id), cat);
+      await setDoc(doc(db, 'categories', cat.id), sanitizeForFirestore(cat));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `categories/${cat.id}`);
     }
@@ -772,13 +787,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalSpent: 0,
       createdAt: new Date().toISOString().split('T')[0]
     };
-    setDoc(doc(db, 'customers', id), newCust).catch(error => handleFirestoreError(error, OperationType.WRITE, `customers/${id}`));
+    setDoc(doc(db, 'customers', id), sanitizeForFirestore(newCust)).catch(error => handleFirestoreError(error, OperationType.WRITE, `customers/${id}`));
     return newCust;
   };
 
   const updateCustomer = async (cust: Customer) => {
     try {
-      await setDoc(doc(db, 'customers', cust.id), cust);
+      await setDoc(doc(db, 'customers', cust.id), sanitizeForFirestore(cust));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `customers/${cust.id}`);
     }
@@ -801,7 +816,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const id = 'usr_' + Date.now();
     const newUser: User = { ...userData, id };
     try {
-      await setDoc(doc(db, 'users', id), newUser);
+      await setDoc(doc(db, 'users', id), sanitizeForFirestore(newUser));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `users/${id}`);
     }
@@ -821,7 +836,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateSettings = async (newSettings: Partial<StoreSettings>) => {
     const updated = { ...settings, ...newSettings };
     try {
-      await setDoc(doc(db, 'settings', 'store_config'), updated);
+      await setDoc(doc(db, 'settings', 'store_config'), sanitizeForFirestore(updated));
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'settings/store_config');
     }
@@ -836,18 +851,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       // Sync unsynced sales to Firestore
       for (const sale of unsyncedSales) {
-        await setDoc(doc(db, 'sales', sale.id), {
+        await setDoc(doc(db, 'sales', sale.id), sanitizeForFirestore({
           ...sale,
           synced: true,
           syncedAt: new Date().toISOString()
-        });
+        }));
       }
 
       // Sync settings to Firestore
-      await setDoc(doc(db, 'settings', 'store_config'), {
+      await setDoc(doc(db, 'settings', 'store_config'), sanitizeForFirestore({
         ...settings,
         updatedAt: new Date().toISOString()
-      });
+      }));
 
       const res = await fetch('/api/cloud-sync', {
         method: 'POST',
@@ -949,12 +964,12 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         const batch = writeBatch(db);
-        initialProducts.forEach(p => batch.set(doc(db, 'products', p.id), p));
-        initialCategories.forEach(c => batch.set(doc(db, 'categories', c.id), c));
-        initialCustomers.forEach(c => batch.set(doc(db, 'customers', c.id), c));
-        initialSalesHistory.forEach(s => batch.set(doc(db, 'sales', s.id), s));
-        initialUsers.forEach(u => batch.set(doc(db, 'users', u.id), u));
-        batch.set(doc(db, 'settings', 'store_config'), initialStoreSettings);
+        initialProducts.forEach(p => batch.set(doc(db, 'products', p.id), sanitizeForFirestore(p)));
+        initialCategories.forEach(c => batch.set(doc(db, 'categories', c.id), sanitizeForFirestore(c)));
+        initialCustomers.forEach(c => batch.set(doc(db, 'customers', c.id), sanitizeForFirestore(c)));
+        initialSalesHistory.forEach(s => batch.set(doc(db, 'sales', s.id), sanitizeForFirestore(s)));
+        initialUsers.forEach(u => batch.set(doc(db, 'users', u.id), sanitizeForFirestore(u)));
+        batch.set(doc(db, 'settings', 'store_config'), sanitizeForFirestore(initialStoreSettings));
         await batch.commit();
       } catch (err) {
         console.error('Error resetting Firestore:', err);
@@ -981,9 +996,9 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         const batch = writeBatch(db);
-        template.products.forEach(p => batch.set(doc(db, 'products', p.id), p));
-        template.categories.forEach(c => batch.set(doc(db, 'categories', c.id), c));
-        batch.set(doc(db, 'settings', 'store_config'), updatedSettings);
+        template.products.forEach(p => batch.set(doc(db, 'products', p.id), sanitizeForFirestore(p)));
+        template.categories.forEach(c => batch.set(doc(db, 'categories', c.id), sanitizeForFirestore(c)));
+        batch.set(doc(db, 'settings', 'store_config'), sanitizeForFirestore(updatedSettings));
         await batch.commit();
       } catch (err) {
         console.error('Error syncing preset to Firestore:', err);
