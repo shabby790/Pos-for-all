@@ -26,8 +26,66 @@ import {
 } from '../data/initialData';
 import { industryTemplates } from '../data/industryPresets';
 import { sounds } from '../utils/sound';
-import { db } from '../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { 
+  doc, 
+  setDoc, 
+  collection, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  deleteDoc,
+  getDocFromServer,
+  writeBatch,
+  updateDoc
+} from 'firebase/firestore';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 interface POSContextType {
   // State
@@ -58,6 +116,7 @@ interface POSContextType {
   notifications: NotificationItem[];
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
+  isLoading: boolean;
 
   // Role Permissions
   userPermissions: UserPermissions;
@@ -154,6 +213,70 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [cartDiscountPercent, setCartDiscountPercent] = useState<number>(0);
   const [appliedPromo, setAppliedPromo] = useState<PromoCode | undefined>(undefined);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  // Test Connection on Mount
+  useEffect(() => {
+    async function testConnection() {
+      try {
+        await getDocFromServer(doc(db, 'test', 'connection'));
+        console.log('Firebase connection validated');
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration.");
+        }
+      }
+    }
+    testConnection();
+  }, []);
+
+  // Real-time Sync from Firestore
+  useEffect(() => {
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+      const prods: Product[] = [];
+      snapshot.forEach(doc => prods.push({ ...doc.data(), id: doc.id } as Product));
+      if (prods.length > 0) setProducts(prods);
+      setIsLoading(false);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
+
+    const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+      const cats: Category[] = [];
+      snapshot.forEach(doc => cats.push({ ...doc.data(), id: doc.id } as Category));
+      if (cats.length > 0) setCategories(cats);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
+
+    const unsubCustomers = onSnapshot(collection(db, 'customers'), (snapshot) => {
+      const custs: Customer[] = [];
+      snapshot.forEach(doc => custs.push({ ...doc.data(), id: doc.id } as Customer));
+      if (custs.length > 0) setCustomers(custs);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
+
+    const unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('createdAt', 'desc')), (snapshot) => {
+      const salesHistory: Sale[] = [];
+      snapshot.forEach(doc => salesHistory.push({ ...doc.data(), id: doc.id } as Sale));
+      if (salesHistory.length > 0) setSales(salesHistory);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'store_config'), (doc) => {
+      if (doc.exists()) {
+        setSettings(doc.data() as StoreSettings);
+      }
+    }, (error) => handleFirestoreError(error, OperationType.GET, 'settings/store_config'));
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const users: User[] = [];
+      snapshot.forEach(doc => users.push({ ...doc.data(), id: doc.id } as User));
+      if (users.length > 0) setUsersList(users);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+
+    return () => {
+      unsubProducts();
+      unsubCategories();
+      unsubCustomers();
+      unsubSales();
+      unsubSettings();
+    };
+  }, []);
   
   // Online / Offline & Sync
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -451,188 +574,219 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       walletDetails: paymentMethod === 'wallet' ? paymentMetaData?.walletDetails : undefined,
     };
 
+    // Atomically update stock, customer stats, and save sale
+    const batch = writeBatch(db);
+
     // Deduct stock
-    setProducts(prevProds =>
-      prevProds.map(p => {
-        const cartMatch = cart.find(ci => ci.product.id === p.id);
-        if (cartMatch) {
-          const newQty = Math.max(0, p.stockQuantity - cartMatch.quantity);
-          if (newQty <= p.reorderLevel) {
-            addNotification('Low Stock Alert', `${p.name} stock is down to ${newQty} ${p.unit}!`, 'low_stock');
-          }
-          return { ...p, stockQuantity: newQty };
+    cart.forEach(item => {
+      const p = products.find(prod => prod.id === item.product.id);
+      if (p) {
+        const newQty = Math.max(0, p.stockQuantity - item.quantity);
+        batch.update(doc(db, 'products', p.id), { stockQuantity: newQty });
+        if (newQty <= p.reorderLevel) {
+          addNotification('Low Stock Alert', `${p.name} stock is down to ${newQty} ${p.unit}!`, 'low_stock');
         }
-        return p;
-      })
-    );
+      }
+    });
 
     // Update customer stats & Udhaar balance
     if (selectedCustomer) {
-      setCustomers(prevCusts =>
-        prevCusts.map(c => {
-          if (c.id === selectedCustomer.id) {
-            const addedPoints = Math.floor(grandTotal / 100);
-            const addedBalance = paymentMethod === 'credit_udhaar' ? grandTotal : 0;
-            return {
-              ...c,
-              loyaltyPoints: c.loyaltyPoints + addedPoints,
-              outstandingBalance: c.outstandingBalance + addedBalance,
-              totalSpent: c.totalSpent + grandTotal
-            };
-          }
-          return c;
-        })
-      );
+      const addedPoints = Math.floor(grandTotal / 100);
+      const addedBalance = paymentMethod === 'credit_udhaar' ? grandTotal : 0;
+      batch.update(doc(db, 'customers', selectedCustomer.id), {
+        loyaltyPoints: (selectedCustomer.loyaltyPoints || 0) + addedPoints,
+        outstandingBalance: (selectedCustomer.outstandingBalance || 0) + addedBalance,
+        totalSpent: (selectedCustomer.totalSpent || 0) + grandTotal
+      });
     }
 
     // Save sale
-    setSales(prev => [newSale, ...prev]);
+    batch.set(doc(db, 'sales', newSale.id), newSale);
 
-    if (settings.enableSound) {
-      sounds.playSuccess();
-    }
-
-    addNotification('Sale Processed', `Order ${orderNum} completed (${settings.currencySymbol} ${grandTotal})`, 'sale');
-
-    clearCart();
+    batch.commit()
+      .then(() => {
+        if (settings.enableSound) sounds.playSuccess();
+        addNotification('Sale Processed', `Order ${orderNum} completed (${settings.currencySymbol} ${grandTotal})`, 'sale');
+        clearCart();
+      })
+      .catch(error => handleFirestoreError(error, OperationType.WRITE, 'checkout-batch'));
 
     return { success: true, sale: newSale };
   };
 
-  const voidSale = (saleId: string) => {
+  const voidSale = async (saleId: string) => {
     const targetSale = sales.find(s => s.id === saleId);
     if (!targetSale) {
       return { success: false, message: 'Sale order not found.' };
     }
 
+    const batch = writeBatch(db);
+
     // Revert stock
-    setProducts(prevProds =>
-      prevProds.map(p => {
-        const matchedItem = targetSale.items.find(i => i.product.id === p.id);
-        if (matchedItem) {
-          return { ...p, stockQuantity: p.stockQuantity + matchedItem.quantity };
-        }
-        return p;
-      })
-    );
+    targetSale.items.forEach(item => {
+      const p = products.find(prod => prod.id === item.product.id);
+      if (p) {
+        batch.update(doc(db, 'products', p.id), { stockQuantity: p.stockQuantity + item.quantity });
+      }
+    });
 
     // Revert customer balance / points
     if (targetSale.customerId) {
-      setCustomers(prevCusts =>
-        prevCusts.map(c => {
-          if (c.id === targetSale.customerId) {
-            const deductedPoints = Math.floor(targetSale.grandTotal / 100);
-            const deductedUdhaar = targetSale.paymentMethod === 'credit_udhaar' ? targetSale.grandTotal : 0;
-            return {
-              ...c,
-              loyaltyPoints: Math.max(0, c.loyaltyPoints - deductedPoints),
-              outstandingBalance: Math.max(0, c.outstandingBalance - deductedUdhaar),
-              totalSpent: Math.max(0, c.totalSpent - targetSale.grandTotal)
-            };
-          }
-          return c;
-        })
-      );
+      const c = customers.find(cust => cust.id === targetSale.customerId);
+      if (c) {
+        const deductedPoints = Math.floor(targetSale.grandTotal / 100);
+        const deductedUdhaar = targetSale.paymentMethod === 'credit_udhaar' ? targetSale.grandTotal : 0;
+        batch.update(doc(db, 'customers', c.id), {
+          loyaltyPoints: Math.max(0, (c.loyaltyPoints || 0) - deductedPoints),
+          outstandingBalance: Math.max(0, (c.outstandingBalance || 0) - deductedUdhaar),
+          totalSpent: Math.max(0, (c.totalSpent || 0) - targetSale.grandTotal)
+        });
+      }
     }
 
-    // Remove sale from history
-    setSales(prev => prev.filter(s => s.id !== saleId));
-    addNotification('Sale Voided', `Order ${targetSale.orderNumber} was voided and stock restored.`, 'system');
+    // Remove sale from Firestore
+    batch.delete(doc(db, 'sales', saleId));
 
-    return { success: true, message: `Order ${targetSale.orderNumber} voided successfully!` };
+    try {
+      await batch.commit();
+      addNotification('Sale Voided', `Order ${targetSale.orderNumber} was voided and stock restored.`, 'system');
+      return { success: true, message: `Order ${targetSale.orderNumber} voided successfully!` };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `sales/${saleId}`);
+      return { success: false, message: 'Failed to void sale in cloud.' };
+    }
   };
 
   // Inventory CRUD
-  const addProduct = (prodData: Omit<Product, 'id'>) => {
-    const newProd: Product = {
-      ...prodData,
-      id: 'prod_' + Date.now()
-    };
-    setProducts(prev => [newProd, ...prev]);
-    addNotification('Product Added', `${newProd.name} added to inventory.`, 'system');
+  const addProduct = async (prodData: Omit<Product, 'id'>) => {
+    const id = 'prod_' + Date.now();
+    const newProd: Product = { ...prodData, id };
+    try {
+      await setDoc(doc(db, 'products', id), newProd);
+      addNotification('Product Added', `${newProd.name} added to cloud inventory.`, 'system');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `products/${id}`);
+    }
   };
 
-  const updateProduct = (prod: Product) => {
-    setProducts(prev => prev.map(p => p.id === prod.id ? prod : p));
+  const updateProduct = async (prod: Product) => {
+    try {
+      await setDoc(doc(db, 'products', prod.id), prod);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `products/${prod.id}`);
+    }
   };
 
-  const deleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
+  const deleteProduct = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'products', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
+    }
   };
 
-  const adjustStock = (id: string, deltaQty: number, note?: string) => {
-    setProducts(prev =>
-      prev.map(p => {
-        if (p.id === id) {
-          const updatedQty = Math.max(0, p.stockQuantity + deltaQty);
-          return { ...p, stockQuantity: updatedQty };
-        }
-        return p;
-      })
-    );
+  const adjustStock = async (id: string, deltaQty: number, note?: string) => {
+    const p = products.find(prod => prod.id === id);
+    if (!p) return;
+    const updatedQty = Math.max(0, p.stockQuantity + deltaQty);
+    try {
+      await updateDoc(doc(db, 'products', id), { stockQuantity: updatedQty });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `products/${id}`);
+    }
   };
 
   // Categories CRUD
-  const addCategory = (catData: Omit<Category, 'id'>) => {
-    const newCat: Category = {
-      ...catData,
-      id: 'cat_' + Date.now()
-    };
-    setCategories(prev => [...prev, newCat]);
+  const addCategory = async (catData: Omit<Category, 'id'>) => {
+    const id = 'cat_' + Date.now();
+    const newCat: Category = { ...catData, id };
+    try {
+      await setDoc(doc(db, 'categories', id), newCat);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `categories/${id}`);
+    }
   };
 
-  const updateCategory = (cat: Category) => {
-    setCategories(prev => prev.map(c => c.id === cat.id ? cat : c));
+  const updateCategory = async (cat: Category) => {
+    try {
+      await setDoc(doc(db, 'categories', cat.id), cat);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `categories/${cat.id}`);
+    }
   };
 
-  const deleteCategory = (id: string) => {
-    setCategories(prev => prev.filter(c => c.id !== id));
+  const deleteCategory = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'categories', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `categories/${id}`);
+    }
   };
 
   // Customers & Udhaar
   const addCustomer = (cData: Omit<Customer, 'id' | 'loyaltyPoints' | 'outstandingBalance' | 'totalSpent' | 'createdAt'>): Customer => {
+    const id = 'cust_' + Date.now();
     const newCust: Customer = {
       ...cData,
-      id: 'cust_' + Date.now(),
+      id,
       loyaltyPoints: 0,
       outstandingBalance: 0,
       totalSpent: 0,
       createdAt: new Date().toISOString().split('T')[0]
     };
-    setCustomers(prev => [...prev, newCust]);
+    setDoc(doc(db, 'customers', id), newCust).catch(error => handleFirestoreError(error, OperationType.WRITE, `customers/${id}`));
     return newCust;
   };
 
-  const updateCustomer = (cust: Customer) => {
-    setCustomers(prev => prev.map(c => c.id === cust.id ? cust : c));
+  const updateCustomer = async (cust: Customer) => {
+    try {
+      await setDoc(doc(db, 'customers', cust.id), cust);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `customers/${cust.id}`);
+    }
   };
 
-  const collectUdhaarPayment = (customerId: string, amount: number) => {
-    setCustomers(prev =>
-      prev.map(c => {
-        if (c.id === customerId) {
-          const newBal = Math.max(0, c.outstandingBalance - amount);
-          return { ...c, outstandingBalance: newBal };
-        }
-        return c;
-      })
-    );
-    addNotification('Udhaar Payment Received', `Payment of ${settings.currencySymbol}${amount} recorded.`, 'system');
+  const collectUdhaarPayment = async (customerId: string, amount: number) => {
+    const c = customers.find(cust => cust.id === customerId);
+    if (!c) return;
+    const newBal = Math.max(0, c.outstandingBalance - amount);
+    try {
+      await updateDoc(doc(db, 'customers', customerId), { outstandingBalance: newBal });
+      addNotification('Udhaar Payment Received', `Payment of ${settings.currencySymbol}${amount} recorded.`, 'system');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `customers/${customerId}`);
+    }
   };
 
   // Roles & Users
-  const addUser = (userData: Omit<User, 'id'>) => {
-    const newUser: User = { ...userData, id: 'usr_' + Date.now() };
-    setUsersList(prev => [...prev, newUser]);
+  const addUser = async (userData: Omit<User, 'id'>) => {
+    const id = 'usr_' + Date.now();
+    const newUser: User = { ...userData, id };
+    try {
+      await setDoc(doc(db, 'users', id), newUser);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${id}`);
+    }
   };
 
-  const toggleUserActive = (userId: string) => {
-    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, active: !u.active } : u));
+  const toggleUserActive = async (userId: string) => {
+    const u = usersList.find(user => user.id === userId);
+    if (!u) return;
+    try {
+      await updateDoc(doc(db, 'users', userId), { active: !u.active });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
+    }
   };
 
   // Settings
-  const updateSettings = (newSettings: Partial<StoreSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+  const updateSettings = async (newSettings: Partial<StoreSettings>) => {
+    const updated = { ...settings, ...newSettings };
+    try {
+      await setDoc(doc(db, 'settings', 'store_config'), updated);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'settings/store_config');
+    }
   };
 
   // Cloud Sync
@@ -820,6 +974,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notifications,
         markNotificationRead,
         clearNotifications,
+        isLoading,
         userPermissions,
         addToCart,
         updateCartQuantity,

@@ -12,7 +12,16 @@ import { NotificationDrawer } from './components/Notifications/NotificationDrawe
 function MainLayout() {
   const [activeTab, setActiveTab] = useState<string>('pos');
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const { userPermissions } = usePOS();
+  const { userPermissions, isLoading } = usePOS();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+        <p className="text-slate-400 font-medium animate-pulse">Syncing with Cloud Storage...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950 overflow-x-hidden max-w-full w-full">
