@@ -77,6 +77,19 @@
         "tagline": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
+    },
+    "User": {
+      "title": "User",
+      "description": "System user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "pin": { "type": "string" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["id", "name", "role", "pin"]
     }
   },
   "firestore": {
@@ -99,6 +112,10 @@
     "/settings/store_config": {
       "schema": "Settings",
       "description": "Global store settings"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Global users collection"
     }
   }
 }

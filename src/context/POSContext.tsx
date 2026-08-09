@@ -235,26 +235,26 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
       const prods: Product[] = [];
       snapshot.forEach(doc => prods.push({ ...doc.data(), id: doc.id } as Product));
-      if (prods.length > 0) setProducts(prods);
+      setProducts(prods);
       setIsLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
 
     const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
       const cats: Category[] = [];
       snapshot.forEach(doc => cats.push({ ...doc.data(), id: doc.id } as Category));
-      if (cats.length > 0) setCategories(cats);
+      setCategories(cats);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
 
     const unsubCustomers = onSnapshot(collection(db, 'customers'), (snapshot) => {
       const custs: Customer[] = [];
       snapshot.forEach(doc => custs.push({ ...doc.data(), id: doc.id } as Customer));
-      if (custs.length > 0) setCustomers(custs);
+      setCustomers(custs);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
 
     const unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('createdAt', 'desc')), (snapshot) => {
       const salesHistory: Sale[] = [];
       snapshot.forEach(doc => salesHistory.push({ ...doc.data(), id: doc.id } as Sale));
-      if (salesHistory.length > 0) setSales(salesHistory);
+      setSales(salesHistory);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'store_config'), (doc) => {
@@ -266,7 +266,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const users: User[] = [];
       snapshot.forEach(doc => users.push({ ...doc.data(), id: doc.id } as User));
-      if (users.length > 0) setUsersList(users);
+      setUsersList(users);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
     return () => {
