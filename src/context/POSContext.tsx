@@ -235,38 +235,76 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
       const prods: Product[] = [];
       snapshot.forEach(doc => prods.push({ ...doc.data(), id: doc.id } as Product));
-      setProducts(prods);
+      if (prods.length > 0) {
+        setProducts(prods);
+      } else if (snapshot.empty) {
+        initialProducts.forEach(p => {
+          setDoc(doc(db, 'products', p.id), p).catch(() => {});
+        });
+        setProducts(initialProducts);
+      }
       setIsLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
 
     const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
       const cats: Category[] = [];
       snapshot.forEach(doc => cats.push({ ...doc.data(), id: doc.id } as Category));
-      setCategories(cats);
+      if (cats.length > 0) {
+        setCategories(cats);
+      } else if (snapshot.empty) {
+        initialCategories.forEach(c => {
+          setDoc(doc(db, 'categories', c.id), c).catch(() => {});
+        });
+        setCategories(initialCategories);
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
 
     const unsubCustomers = onSnapshot(collection(db, 'customers'), (snapshot) => {
       const custs: Customer[] = [];
       snapshot.forEach(doc => custs.push({ ...doc.data(), id: doc.id } as Customer));
-      setCustomers(custs);
+      if (custs.length > 0) {
+        setCustomers(custs);
+      } else if (snapshot.empty) {
+        initialCustomers.forEach(c => {
+          setDoc(doc(db, 'customers', c.id), c).catch(() => {});
+        });
+        setCustomers(initialCustomers);
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
 
     const unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('createdAt', 'desc')), (snapshot) => {
       const salesHistory: Sale[] = [];
       snapshot.forEach(doc => salesHistory.push({ ...doc.data(), id: doc.id } as Sale));
-      setSales(salesHistory);
+      if (salesHistory.length > 0) {
+        setSales(salesHistory);
+      } else if (snapshot.empty) {
+        initialSalesHistory.forEach(s => {
+          setDoc(doc(db, 'sales', s.id), s).catch(() => {});
+        });
+        setSales(initialSalesHistory);
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'store_config'), (doc) => {
-      if (doc.exists()) {
-        setSettings(doc.data() as StoreSettings);
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'store_config'), (snapshot) => {
+      if (snapshot.exists()) {
+        setSettings(snapshot.data() as StoreSettings);
+      } else {
+        setDoc(doc(db, 'settings', 'store_config'), initialStoreSettings).catch(() => {});
+        setSettings(initialStoreSettings);
       }
     }, (error) => handleFirestoreError(error, OperationType.GET, 'settings/store_config'));
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
       const users: User[] = [];
       snapshot.forEach(doc => users.push({ ...doc.data(), id: doc.id } as User));
-      setUsersList(users);
+      if (users.length > 0) {
+        setUsersList(users);
+      } else if (snapshot.empty) {
+        initialUsers.forEach(u => {
+          setDoc(doc(db, 'users', u.id), u).catch(() => {});
+        });
+        setUsersList(initialUsers);
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
     return () => {
@@ -896,7 +934,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
 
-  const resetToDummyData = () => {
+  const resetToDummyData = async () => {
     if (confirm('Are you sure you want to reset all data back to original demo state?')) {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       setProducts(initialProducts);
@@ -908,29 +946,55 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser(initialUsers[0]);
       setCart([]);
       setHoldCarts([]);
+
+      try {
+        const batch = writeBatch(db);
+        initialProducts.forEach(p => batch.set(doc(db, 'products', p.id), p));
+        initialCategories.forEach(c => batch.set(doc(db, 'categories', c.id), c));
+        initialCustomers.forEach(c => batch.set(doc(db, 'customers', c.id), c));
+        initialSalesHistory.forEach(s => batch.set(doc(db, 'sales', s.id), s));
+        initialUsers.forEach(u => batch.set(doc(db, 'users', u.id), u));
+        batch.set(doc(db, 'settings', 'store_config'), initialStoreSettings);
+        await batch.commit();
+      } catch (err) {
+        console.error('Error resetting Firestore:', err);
+      }
+
       alert('System reset to clean sample data successfully.');
     }
   };
 
-  const loadIndustryPreset = (businessType: string) => {
+  const loadIndustryPreset = async (businessType: string) => {
     const template = industryTemplates[businessType];
     if (template) {
       setProducts(template.products);
       setCategories(template.categories);
-      setSettings(prev => ({
-        ...prev,
+      const updatedSettings: StoreSettings = {
+        ...settings,
         businessType: businessType as any,
         storeName: template.name,
         tagline: template.tagline
-      }));
+      };
+      setSettings(updatedSettings);
       setCart([]);
       setHoldCarts([]);
+
+      try {
+        const batch = writeBatch(db);
+        template.products.forEach(p => batch.set(doc(db, 'products', p.id), p));
+        template.categories.forEach(c => batch.set(doc(db, 'categories', c.id), c));
+        batch.set(doc(db, 'settings', 'store_config'), updatedSettings);
+        await batch.commit();
+      } catch (err) {
+        console.error('Error syncing preset to Firestore:', err);
+      }
+
       sounds.playSuccess();
-      alert(`✅ Loaded sample catalog for "${template.name}" successfully! (${template.products.length} Items & ${template.categories.length} Categories)`);
+      alert(`✅ Loaded sample catalog for "${template.name}" successfully! (${template.products.length} Items & ${template.categories.length} Categories synced to cloud DB)`);
     }
   };
 
-  const clearAllDataToZero = () => {
+  const clearAllDataToZero = async () => {
     if (confirm('⚠️ WARNING: Clear All Data to Zero!\n\nThis will delete all products, categories, sales history, customers, and active carts so you can start completely fresh from scratch.\n\nAre you sure you want to start from ZERO?')) {
       setProducts([]);
       setCategories([]);
@@ -939,6 +1003,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCart([]);
       setHoldCarts([]);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
+
+      try {
+        const batch = writeBatch(db);
+        products.forEach(p => batch.delete(doc(db, 'products', p.id)));
+        categories.forEach(c => batch.delete(doc(db, 'categories', c.id)));
+        sales.forEach(s => batch.delete(doc(db, 'sales', s.id)));
+        customers.forEach(c => batch.delete(doc(db, 'customers', c.id)));
+        await batch.commit();
+      } catch (err) {
+        console.error('Error clearing Firestore DB:', err);
+      }
+
       sounds.playSuccess();
       alert('✨ All dummy data cleared! Your POS system is now fresh & ready for real entry (0 products, 0 sales).');
     }
