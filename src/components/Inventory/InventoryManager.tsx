@@ -598,6 +598,9 @@ export const InventoryManager: React.FC = () => {
                             <img
                               src={p.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100'}
                               alt=""
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=100';
+                              }}
                               className="w-9 h-9 rounded-lg object-cover bg-slate-950 shrink-0"
                             />
                             <div>

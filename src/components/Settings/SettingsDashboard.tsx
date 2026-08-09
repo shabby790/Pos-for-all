@@ -105,6 +105,7 @@ export const SettingsDashboard: React.FC = () => {
                   className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
                 >
                   <option value="supermarket">🛒 Supermarket / Grocery / Kiryana Store</option>
+                  <option value="restaurant_cafe">🍔 Restaurant, Fast Food & Cafe POS</option>
                   <option value="solar_shop">☀️ Solar Energy Shop & System Solutions</option>
                   <option value="beverages">🥤 Beverages, Cold Drinks & Water Mart</option>
                   <option value="garments">👕 Garments, Boutique & Apparel Shop</option>

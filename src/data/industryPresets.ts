@@ -31,6 +31,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 48,
         unit: 'Pack',
         reorderLevel: 10,
+        image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&auto=format&fit=crop&q=80',
         description: 'UHT Whole Milk 100% Pure'
       },
       {
@@ -44,7 +45,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 690,
         stockQuantity: 25,
         unit: 'Pack',
-        reorderLevel: 5
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=300&auto=format&fit=crop&q=80',
+        description: 'Premium Granular Black Tea'
       },
       {
         id: 'p_sup_3',
@@ -57,7 +60,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 180,
         stockQuantity: 60,
         unit: 'Bottle',
-        reorderLevel: 12
+        reorderLevel: 12,
+        image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&auto=format&fit=crop&q=80',
+        description: 'Chilled Carbonated Soda Drink'
       },
       {
         id: 'p_sup_4',
@@ -70,7 +75,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 100,
         stockQuantity: 8,
         unit: 'Pack',
-        reorderLevel: 15
+        reorderLevel: 15,
+        image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&auto=format&fit=crop&q=80',
+        description: 'Crispy Potato Snack Masala'
       },
       {
         id: 'p_sup_5',
@@ -83,7 +90,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 2100,
         stockQuantity: 18,
         unit: 'Bag',
-        reorderLevel: 5
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&auto=format&fit=crop&q=80',
+        description: 'Long Grain Premium Basmati Rice'
       },
       {
         id: 'p_sup_6',
@@ -96,7 +105,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 750,
         stockQuantity: 30,
         unit: 'Pack',
-        reorderLevel: 6
+        reorderLevel: 6,
+        image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80',
+        description: 'Fabric Washing Detergent Powder'
       }
     ]
   },
@@ -123,6 +134,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 15,
         unit: 'Suit',
         reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?w=300&auto=format&fit=crop&q=80',
         description: '100% Egyptian Cotton Breathable Fabric'
       },
       {
@@ -137,6 +149,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 20,
         unit: 'Suit',
         reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=300&auto=format&fit=crop&q=80',
         description: 'Embroidered Dupatta with Printed Shirt & Trouser'
       },
       {
@@ -150,7 +163,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 2400,
         stockQuantity: 25,
         unit: 'Pcs',
-        reorderLevel: 5
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=300&auto=format&fit=crop&q=80',
+        description: 'Stretch Denim Jeans Dark Blue'
       },
       {
         id: 'p_gar_4',
@@ -163,7 +178,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 850,
         stockQuantity: 40,
         unit: 'Pcs',
-        reorderLevel: 8
+        reorderLevel: 8,
+        image: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=300&auto=format&fit=crop&q=80',
+        description: 'Soft Cotton Printed Kids T-Shirt'
       },
       {
         id: 'p_gar_5',
@@ -176,7 +193,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 1200,
         stockQuantity: 18,
         unit: 'Pcs',
-        reorderLevel: 4
+        reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=300&auto=format&fit=crop&q=80',
+        description: 'Pure Leather Formal Men Belt'
       }
     ]
   },
@@ -203,6 +222,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 50,
         unit: 'Box',
         reorderLevel: 10,
+        image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&auto=format&fit=crop&q=80',
         description: 'Paracetamol + Caffeine Pain Relief'
       },
       {
@@ -216,7 +236,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 330,
         stockQuantity: 35,
         unit: 'Pack',
-        reorderLevel: 8
+        reorderLevel: 8,
+        image: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=300&auto=format&fit=crop&q=80',
+        description: 'Amoxicillin Antibiotic Tablets'
       },
       {
         id: 'p_pha_3',
@@ -229,7 +251,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 135,
         stockQuantity: 28,
         unit: 'Bottle',
-        reorderLevel: 6
+        reorderLevel: 6,
+        image: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=300&auto=format&fit=crop&q=80',
+        description: 'Children Fever Pain Relief Syrup'
       },
       {
         id: 'p_pha_4',
@@ -242,7 +266,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 550,
         stockQuantity: 12,
         unit: 'Pcs',
-        reorderLevel: 3
+        reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=300&auto=format&fit=crop&q=80',
+        description: 'LCD Fast Reading Body Thermometer'
       },
       {
         id: 'p_pha_5',
@@ -255,7 +281,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 2850,
         stockQuantity: 16,
         unit: 'Box',
-        reorderLevel: 4
+        reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=300&auto=format&fit=crop&q=80',
+        description: 'Leak Proof Soft Baby Diapers'
       }
     ]
   },
@@ -282,6 +310,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 8,
         unit: 'Pcs',
         reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300&auto=format&fit=crop&q=80',
         description: 'Rich Belgian Chocolate Cream Layers'
       },
       {
@@ -295,7 +324,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 1100,
         stockQuantity: 15,
         unit: 'Kg',
-        reorderLevel: 4
+        reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300&auto=format&fit=crop&q=80',
+        description: 'Soft Warm Sweet Gulab Jamun'
       },
       {
         id: 'p_bak_3',
@@ -308,7 +339,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 420,
         stockQuantity: 20,
         unit: 'Pack',
-        reorderLevel: 5
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300&auto=format&fit=crop&q=80',
+        description: 'Flaky Puff Pastry Chicken Patties'
       },
       {
         id: 'p_bak_4',
@@ -321,7 +354,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 170,
         stockQuantity: 30,
         unit: 'Pack',
-        reorderLevel: 8
+        reorderLevel: 8,
+        image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300&auto=format&fit=crop&q=80',
+        description: 'Fresh Baked Soft White Milky Bread'
       },
       {
         id: 'p_bak_5',
@@ -334,7 +369,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 320,
         stockQuantity: 25,
         unit: 'Pack',
-        reorderLevel: 6
+        reorderLevel: 6,
+        image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=300&auto=format&fit=crop&q=80',
+        description: 'Crispy Sweet Cake Rusk'
       }
     ]
   },
@@ -361,6 +398,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 12,
         unit: 'Can',
         reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=300&auto=format&fit=crop&q=80',
         description: 'Korean Synthetic Formulation for High Heat Endurance'
       },
       {
@@ -374,7 +412,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 1050,
         stockQuantity: 30,
         unit: 'Pcs',
-        reorderLevel: 8
+        reorderLevel: 8,
+        image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=300&auto=format&fit=crop&q=80',
+        description: 'Genuine Toyota Oil Filter'
       },
       {
         id: 'p_sp_3',
@@ -387,7 +427,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 3900,
         stockQuantity: 10,
         unit: 'Set',
-        reorderLevel: 3
+        reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=300&auto=format&fit=crop&q=80',
+        description: 'NGK High Performance Spark Plugs'
       },
       {
         id: 'p_sp_4',
@@ -400,7 +442,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 4600,
         stockQuantity: 8,
         unit: 'Set',
-        reorderLevel: 2
+        reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=300&auto=format&fit=crop&q=80',
+        description: 'Ceramic Front Brake Pads Kit'
       },
       {
         id: 'p_sp_5',
@@ -413,7 +457,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 1250,
         stockQuantity: 20,
         unit: 'Can',
-        reorderLevel: 5
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=300&auto=format&fit=crop&q=80',
+        description: 'Multi-use Penetrating Oil & Rust Remover'
       }
     ]
   },
@@ -440,6 +486,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 4,
         unit: 'Pcs',
         reorderLevel: 1,
+        image: 'https://images.unsplash.com/photo-1611591475155-4282fc289e94?w=300&auto=format&fit=crop&q=80',
         description: 'Certified 22 Karat Gold Hallmarked'
       },
       {
@@ -453,7 +500,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 215000,
         stockQuantity: 3,
         unit: 'Pcs',
-        reorderLevel: 1
+        reorderLevel: 1,
+        image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=300&auto=format&fit=crop&q=80',
+        description: 'Solitaire Diamond Platinum Band'
       },
       {
         id: 'p_jew_3',
@@ -466,7 +515,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 11500,
         stockQuantity: 12,
         unit: 'Pcs',
-        reorderLevel: 3
+        reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=300&auto=format&fit=crop&q=80',
+        description: '925 Sterling Silver Chain'
       },
       {
         id: 'p_jew_4',
@@ -479,7 +530,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 278000,
         stockQuantity: 6,
         unit: 'Pcs',
-        reorderLevel: 2
+        reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=300&auto=format&fit=crop&q=80',
+        description: '24K Pure Gold Investment Coin'
       }
     ]
   },
@@ -506,6 +559,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 15,
         unit: 'Pcs',
         reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=300&auto=format&fit=crop&q=80',
         description: '50dB Active Noise Cancellation + Deep Bass'
       },
       {
@@ -519,7 +573,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 3200,
         stockQuantity: 25,
         unit: 'Pcs',
-        reorderLevel: 5
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=300&auto=format&fit=crop&q=80',
+        description: '20W Fast Wall Adapter'
       },
       {
         id: 'p_ele_3',
@@ -532,7 +588,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 5800,
         stockQuantity: 10,
         unit: 'Pcs',
-        reorderLevel: 2
+        reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1609592424009-408a28795908?w=300&auto=format&fit=crop&q=80',
+        description: '20000mAh Portable Power Bank'
       },
       {
         id: 'p_ele_4',
@@ -545,7 +603,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 450,
         stockQuantity: 50,
         unit: 'Pcs',
-        reorderLevel: 10
+        reorderLevel: 10,
+        image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=300&auto=format&fit=crop&q=80',
+        description: 'Fast Charging Data Cable'
       }
     ]
   },
@@ -572,6 +632,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 20,
         unit: 'Pcs',
         reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=300&auto=format&fit=crop&q=80',
         description: 'Long Lasting 16-Hour Hydrating Matte Finish'
       },
       {
@@ -585,7 +646,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 490,
         stockQuantity: 30,
         unit: 'Pcs',
-        reorderLevel: 6
+        reorderLevel: 6,
+        image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=300&auto=format&fit=crop&q=80',
+        description: 'Brightening Facial Wash'
       },
       {
         id: 'p_cos_3',
@@ -598,7 +661,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 4800,
         stockQuantity: 8,
         unit: 'Pcs',
-        reorderLevel: 2
+        reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=300&auto=format&fit=crop&q=80',
+        description: 'Luxury Eau De Parfum Spray'
       },
       {
         id: 'p_cos_4',
@@ -611,7 +676,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 980,
         stockQuantity: 18,
         unit: 'Pcs',
-        reorderLevel: 4
+        reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=300&auto=format&fit=crop&q=80',
+        description: 'Hair Repairing Moisture Shampoo'
       }
     ]
   },
@@ -638,6 +705,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 40,
         unit: 'Bottle',
         reorderLevel: 10,
+        image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&auto=format&fit=crop&q=80',
         description: 'Chilled Carbonated Cola Drink'
       },
       {
@@ -651,7 +719,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 360,
         stockQuantity: 24,
         unit: 'Pack',
-        reorderLevel: 6
+        reorderLevel: 6,
+        image: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=300&auto=format&fit=crop&q=80',
+        description: 'Pure Fruit Juice Pack'
       },
       {
         id: 'p_bev_3',
@@ -664,7 +734,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 580,
         stockQuantity: 30,
         unit: 'Can',
-        reorderLevel: 8
+        reorderLevel: 8,
+        image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=300&auto=format&fit=crop&q=80',
+        description: 'Energy Drink Can'
       },
       {
         id: 'p_bev_4',
@@ -677,7 +749,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 95,
         stockQuantity: 80,
         unit: 'Bottle',
-        reorderLevel: 20
+        reorderLevel: 20,
+        image: 'https://images.unsplash.com/photo-1560023907-5f339617ea30?w=300&auto=format&fit=crop&q=80',
+        description: 'Pure Mineral Drinking Water'
       },
       {
         id: 'p_bev_5',
@@ -690,7 +764,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 100,
         stockQuantity: 50,
         unit: 'Bottle',
-        reorderLevel: 12
+        reorderLevel: 12,
+        image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&auto=format&fit=crop&q=80',
+        description: 'Berry Flavored Energy Drink'
       }
     ]
   },
@@ -717,6 +793,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 6,
         unit: 'Pcs',
         reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
         description: '108MP Camera, 120Hz Display, 33W Fast Charging'
       },
       {
@@ -730,7 +807,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 1450,
         stockQuantity: 25,
         unit: 'Pcs',
-        reorderLevel: 5
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=300&auto=format&fit=crop&q=80',
+        description: 'Protective Magnetic Silicone Phone Case'
       },
       {
         id: 'p_macc_3',
@@ -743,7 +822,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 5200,
         stockQuantity: 12,
         unit: 'Pcs',
-        reorderLevel: 3
+        reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=300&auto=format&fit=crop&q=80',
+        description: 'Wireless Bluetooth Earbuds with ANC'
       },
       {
         id: 'p_macc_4',
@@ -756,7 +837,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 4200,
         stockQuantity: 15,
         unit: 'Pcs',
-        reorderLevel: 4
+        reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=300&auto=format&fit=crop&q=80',
+        description: '65W GaN Fast Wall Adapter'
       },
       {
         id: 'p_macc_5',
@@ -769,7 +852,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 350,
         stockQuantity: 100,
         unit: 'Pcs',
-        reorderLevel: 20
+        reorderLevel: 20,
+        image: 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=300&auto=format&fit=crop&q=80',
+        description: 'Curved Tempered Glass Screen Protector'
       }
     ]
   },
@@ -796,6 +881,7 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         stockQuantity: 5,
         unit: 'Pcs',
         reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=300&auto=format&fit=crop&q=80',
         description: '14" FHD Anti-Glare Display, Backlit Keyboard, Grade A Import'
       },
       {
@@ -809,7 +895,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 11200,
         stockQuantity: 14,
         unit: 'Pcs',
-        reorderLevel: 4
+        reorderLevel: 4,
+        image: 'https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?w=300&auto=format&fit=crop&q=80',
+        description: '512GB High Speed Solid State Drive'
       },
       {
         id: 'p_comp_3',
@@ -822,7 +910,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 5800,
         stockQuantity: 10,
         unit: 'Set',
-        reorderLevel: 3
+        reorderLevel: 3,
+        image: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&auto=format&fit=crop&q=80',
+        description: 'Wireless Desktop Keyboard and Mouse Combo'
       },
       {
         id: 'p_comp_4',
@@ -835,7 +925,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 27500,
         stockQuantity: 4,
         unit: 'Pcs',
-        reorderLevel: 1
+        reorderLevel: 1,
+        image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=300&auto=format&fit=crop&q=80',
+        description: '24 Inch Borderless Full HD Monitor'
       },
       {
         id: 'p_comp_5',
@@ -848,7 +940,9 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         sellPrice: 4100,
         stockQuantity: 8,
         unit: 'Pcs',
-        reorderLevel: 2
+        reorderLevel: 2,
+        image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=300&auto=format&fit=crop&q=80',
+        description: 'RGB Surround Sound Gaming Headset'
       }
     ]
   },
@@ -991,6 +1085,171 @@ export const industryTemplates: Record<string, IndustryTemplate> = {
         unit: 'Box',
         reorderLevel: 8,
         description: 'Complete Distribution Box with DC Circuit Breaker & Lightning Protector'
+      }
+    ]
+  },
+
+  restaurant_cafe: {
+    name: 'Royal Spice Restaurant, Fast Food & Cafe',
+    tagline: 'Delicious Burgers, Pizza, Desi Karahi, BBQ, Coffee & Desserts',
+    categories: [
+      { id: 'cat_rest_fastfood', name: 'Fast Food & Burgers', nameUrdu: 'فاسٹ فوڈ اور برگر', icon: 'UtensilsCrossed', color: 'text-amber-400' },
+      { id: 'cat_rest_desi', name: 'Desi Karahi & Handi', nameUrdu: 'دیسی کڑاہی اور ہانڈی', icon: 'Flame', color: 'text-red-400' },
+      { id: 'cat_rest_bbq', name: 'BBQ & Tandoori Kabab', nameUrdu: 'بی بی کیو اور تکہ کباب', icon: 'Flame', color: 'text-orange-400' },
+      { id: 'cat_rest_cafe', name: 'Cafe Coffee & Cold Beverages', nameUrdu: 'کافی، شیکس اور منٹ مارگریٹا', icon: 'CupSoda', color: 'text-cyan-400' },
+      { id: 'cat_rest_dessert', name: 'Desserts & Ice Cream', nameUrdu: 'میٹھے اور آئس کریم', icon: 'Cake', color: 'text-pink-400' },
+      { id: 'cat_rest_naan', name: 'Fresh Naan & Tandoor', nameUrdu: 'روٹی اور نان', icon: 'Wheat', color: 'text-amber-300' }
+    ],
+    products: [
+      {
+        id: 'p_res_1',
+        name: 'Chicken Zinger Burger Deluxe',
+        nameUrdu: 'چکن زنگر برگر ڈیلکس',
+        category: 'cat_rest_fastfood',
+        sku: 'BURG-ZING-DLX',
+        barcode: '896400130101',
+        buyPrice: 220,
+        sellPrice: 480,
+        stockQuantity: 50,
+        unit: 'Pcs',
+        reorderLevel: 10,
+        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300&auto=format&fit=crop&q=80',
+        description: 'Crispy Fried Chicken Breast, Cheese Slice, Fresh Lettuce & Mayo Garlic Sauce'
+      },
+      {
+        id: 'p_res_2',
+        name: 'Chicken Tikka Cheese Pizza Large 13"',
+        nameUrdu: 'چکن چیز پیزا لارج',
+        category: 'cat_rest_fastfood',
+        sku: 'PIZZA-CHK-LRG',
+        barcode: '896400130102',
+        buyPrice: 650,
+        sellPrice: 1450,
+        stockQuantity: 30,
+        unit: 'Pcs',
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&auto=format&fit=crop&q=80',
+        description: 'Loaded Mozzarella Cheese, Smokey Chicken Tikka Chunks, Black Olives & Mushrooms'
+      },
+      {
+        id: 'p_res_3',
+        name: 'Special Chicken White Karahi 1Kg',
+        nameUrdu: 'خصوصی چکن وائٹ کڑاہی 1 کلو',
+        category: 'cat_rest_desi',
+        sku: 'KARAHI-CHK-WHT',
+        barcode: '896400130103',
+        buyPrice: 1100,
+        sellPrice: 2100,
+        stockQuantity: 25,
+        unit: 'Kg',
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=300&auto=format&fit=crop&q=80',
+        description: 'Cooked in Pure Fresh Cream, Green Chilies, Ginger & Butter Gravy'
+      },
+      {
+        id: 'p_res_4',
+        name: 'Chicken Boti Tikka BBQ (Plate 10 Pcs)',
+        nameUrdu: 'چکن بوٹی تکہ بی بی کیو',
+        category: 'cat_rest_bbq',
+        sku: 'BBQ-CHK-BOTI',
+        barcode: '896400130104',
+        buyPrice: 320,
+        sellPrice: 680,
+        stockQuantity: 40,
+        unit: 'Plate',
+        reorderLevel: 8,
+        image: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?w=300&auto=format&fit=crop&q=80',
+        description: 'Charcoal Smoked Marinated Chicken Tender Pieces with Mint Chutney'
+      },
+      {
+        id: 'p_res_5',
+        name: 'Mutton Seekh Kabab (Plate 4 Pcs)',
+        nameUrdu: 'مٹن سیخ کباب 4 عدد',
+        category: 'cat_rest_bbq',
+        sku: 'BBQ-MUT-SEEKH',
+        barcode: '896400130105',
+        buyPrice: 450,
+        sellPrice: 890,
+        stockQuantity: 30,
+        unit: 'Plate',
+        reorderLevel: 6,
+        image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=300&auto=format&fit=crop&q=80',
+        description: 'Spiced Mutton Mince Charcoal Grilled Kababs served with Salad & Raita'
+      },
+      {
+        id: 'p_res_6',
+        name: 'Spanish Cappuccino Hot Coffee',
+        nameUrdu: 'اسپینش کیپوچینو کافی',
+        category: 'cat_rest_cafe',
+        sku: 'CAFE-CAPP-ESP',
+        barcode: '896400130106',
+        buyPrice: 120,
+        sellPrice: 420,
+        stockQuantity: 60,
+        unit: 'Cup',
+        reorderLevel: 12,
+        image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=300&auto=format&fit=crop&q=80',
+        description: 'Espresso Brew with Steamed Milk Foam & Condensed Caramel Swirl'
+      },
+      {
+        id: 'p_res_7',
+        name: 'Mint Margarita Chilled Ice Slush',
+        nameUrdu: 'منٹ مارگریٹا چلڈ سلش',
+        category: 'cat_rest_cafe',
+        sku: 'CAFE-MINT-MARG',
+        barcode: '896400130107',
+        buyPrice: 70,
+        sellPrice: 280,
+        stockQuantity: 80,
+        unit: 'Glass',
+        reorderLevel: 15,
+        image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=300&auto=format&fit=crop&q=80',
+        description: 'Fresh Mint Leaves, Lemon Juice, Black Salt & Soda Blended Ice'
+      },
+      {
+        id: 'p_res_8',
+        name: 'Sizzling Hot Brownie with Vanilla Ice Cream',
+        nameUrdu: 'چاکلیٹ براؤنی ود آئس کریم',
+        category: 'cat_rest_dessert',
+        sku: 'DESS-BROWN-ICE',
+        barcode: '896400130108',
+        buyPrice: 150,
+        sellPrice: 450,
+        stockQuantity: 25,
+        unit: 'Serving',
+        reorderLevel: 5,
+        image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=300&auto=format&fit=crop&q=80',
+        description: 'Sizzling Plate Dark Chocolate Fudge Brownie & Creamy Vanilla Scoop'
+      },
+      {
+        id: 'p_res_9',
+        name: 'Garlic Desi Butter Naan',
+        nameUrdu: 'گارلک مکھن نان',
+        category: 'cat_rest_naan',
+        sku: 'NAAN-GAR-BTR',
+        barcode: '896400130109',
+        buyPrice: 25,
+        sellPrice: 80,
+        stockQuantity: 100,
+        unit: 'Pcs',
+        reorderLevel: 20,
+        image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300&auto=format&fit=crop&q=80',
+        description: 'Fresh Tandoori Naan Brushed with Pure Desi Ghee & Fresh Garlic'
+      },
+      {
+        id: 'p_res_10',
+        name: 'Club Sandwich Special with Crisp Fries',
+        nameUrdu: 'کلب سینڈوچ ود فرائز',
+        category: 'cat_rest_fastfood',
+        sku: 'SAND-CLUB-SPEC',
+        barcode: '896400130110',
+        buyPrice: 180,
+        sellPrice: 420,
+        stockQuantity: 45,
+        unit: 'Plate',
+        reorderLevel: 10,
+        image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=300&auto=format&fit=crop&q=80',
+        description: 'Triple Layer Toast, Shredded Chicken, Fried Egg, Mayonnaise & French Fries'
       }
     ]
   }
