@@ -493,9 +493,10 @@ export const AnalyticsDashboard: React.FC = () => {
                       s.paymentMethod === 'cash' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' :
                       s.paymentMethod === 'credit_udhaar' ? 'bg-amber-950 text-amber-300 border border-amber-800' :
                       s.paymentMethod === 'wallet' ? 'bg-purple-950 text-purple-300 border border-purple-800' :
+                      s.paymentMethod === 'online' ? 'bg-cyan-950 text-cyan-300 border border-cyan-800' :
                       'bg-blue-950 text-blue-300 border border-blue-800'
                     }`}>
-                      {s.paymentMethod}
+                      {s.paymentMethod === 'online' ? 'ONLINE BANK' : s.paymentMethod}
                     </span>
                     {s.paymentMethod === 'card' && s.cardDetails && (
                       <span className="block text-[10px] text-blue-400 font-medium mt-0.5 normal-case font-mono">

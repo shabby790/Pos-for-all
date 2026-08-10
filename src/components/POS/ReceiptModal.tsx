@@ -15,23 +15,49 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, onClose }) => 
   if (!sale) return null;
 
   const handlePrint = () => {
-    if (printRef.current) {
-      const printContents = printRef.current.innerHTML;
-      const printWindow = window.open('', '', 'height=600,width=400');
-      if (printWindow) {
-        printWindow.document.write(`
+    if (!printRef.current) return;
+    const printContents = printRef.current.innerHTML;
+
+    // Method 1: Use dynamic hidden iframe (bypasses popup blockers in sandboxed app viewers/iframes)
+    try {
+      let iframe = document.getElementById('receipt-print-frame') as HTMLIFrameElement;
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'receipt-print-frame';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        iframe.style.opacity = '0';
+        iframe.style.pointerEvents = 'none';
+        document.body.appendChild(iframe);
+      }
+
+      const frameDoc = iframe.contentWindow?.document || iframe.contentDocument;
+      if (frameDoc) {
+        frameDoc.open();
+        frameDoc.write(`
+          <!DOCTYPE html>
           <html>
             <head>
-              <title>Receipt ${sale.orderNumber}</title>
+              <title>Invoice Receipt ${sale.orderNumber}</title>
               <style>
+                @page {
+                  size: ${settings.paperSize === '58mm' ? '58mm' : '80mm'} auto;
+                  margin: 0;
+                }
                 body {
                   font-family: 'Courier New', Courier, monospace;
                   width: ${settings.paperSize === '58mm' ? '58mm' : '80mm'};
                   margin: 0 auto;
-                  padding: 8px;
+                  padding: 10px;
                   font-size: 11px;
                   color: #000;
                   background: #fff;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
                 }
                 .text-center { text-align: center; }
                 .text-right { text-align: right; }
@@ -41,6 +67,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, onClose }) => 
                 table { width: 100%; border-collapse: collapse; margin: 6px 0; }
                 th, td { text-align: left; padding: 2px 0; font-size: 11px; }
                 .total-row { font-size: 13px; font-weight: bold; border-top: 1px solid #000; border-bottom: 1px double #000; padding: 4px 0; }
+                img { max-width: 100%; }
               </style>
             </head>
             <body>
@@ -48,13 +75,67 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ sale, onClose }) => 
             </body>
           </html>
         `);
-        printWindow.document.close();
-        printWindow.focus();
+        frameDoc.close();
+
         setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 300);
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch (e) {
+            console.warn("Iframe print popup blocked, using window.open fallback:", e);
+            fallbackWindowPrint(printContents);
+          }
+        }, 250);
+        return;
       }
+    } catch (e) {
+      console.warn("Hidden iframe creation failed:", e);
+    }
+
+    fallbackWindowPrint(printContents);
+  };
+
+  const fallbackWindowPrint = (printContents: string) => {
+    const printWindow = window.open('', '_blank', 'height=600,width=400');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Invoice Receipt ${sale.orderNumber}</title>
+            <style>
+              body {
+                font-family: 'Courier New', Courier, monospace;
+                width: ${settings.paperSize === '58mm' ? '58mm' : '80mm'};
+                margin: 0 auto;
+                padding: 8px;
+                font-size: 11px;
+                color: #000;
+                background: #fff;
+              }
+              .text-center { text-align: center; }
+              .text-right { text-align: right; }
+              .bold { font-weight: bold; }
+              .border-b { border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 4px; }
+              .flex { display: flex; justify-content: space-between; }
+              table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+              th, td { text-align: left; padding: 2px 0; font-size: 11px; }
+            </style>
+          </head>
+          <body>
+            ${printContents}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 300);
+    } else {
+      // Direct window.print fallback
+      window.print();
     }
   };
 
@@ -150,6 +231,29 @@ Thank you for shopping with us!`;
             </tbody>
           </table>
 
+          {/* Specialized Token for Nan Shop (Facilitates Tandoor Order) */}
+          {settings.businessType === 'nan_shop' && (
+            <div className="mt-4 border-t-2 border-double border-slate-900 pt-4 text-center">
+              <div className="inline-block border-2 border-slate-950 p-2 rounded-lg mb-2">
+                <h3 className="font-black text-lg uppercase tracking-tighter leading-none mb-1">ORDER TOKEN</h3>
+                <p className="text-[10px] font-bold text-slate-500 uppercase leading-none">Nan Center ID: {sale.orderNumber.split('-').pop()}</p>
+              </div>
+              
+              <div className="space-y-1 my-2">
+                {sale.items.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-center gap-3">
+                    <span className="text-xl font-black">{item.quantity}</span>
+                    <span className="text-base font-bold uppercase">{item.product.name}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <p className="text-[10px] italic text-slate-500 mt-2 border-t border-dashed border-slate-300 pt-2">
+                Please present this token at the tandoor to collect your fresh nans.
+              </p>
+            </div>
+          )}
+
           {/* Calculations */}
           <div className="border-t border-dashed border-slate-300 pt-2 space-y-1 text-[11px]">
             <div className="flex justify-between">
@@ -174,7 +278,9 @@ Thank you for shopping with us!`;
             </div>
             <div className="flex justify-between text-slate-600">
               <span>Payment Mode:</span>
-              <span className="font-bold capitalize">{sale.paymentMethod}</span>
+              <span className="font-bold capitalize">
+                {sale.paymentMethod === 'online' ? 'Online / Bank Transfer' : sale.paymentMethod === 'credit_udhaar' ? 'Credit / Udhaar' : sale.paymentMethod}
+              </span>
             </div>
             {sale.paymentMethod === 'cash' && (
               <>

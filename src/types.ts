@@ -55,7 +55,7 @@ export interface CartItem {
   itemDiscountAmount?: number; // item level discount in flat currency amount (e.g. Rs)
 }
 
-export type PaymentMethod = 'cash' | 'card' | 'wallet' | 'credit_udhaar';
+export type PaymentMethod = 'cash' | 'card' | 'online' | 'wallet' | 'credit_udhaar';
 
 export interface Customer {
   id: string;
@@ -112,7 +112,7 @@ export interface HoldCart {
 export interface StoreSettings {
   storeName: string;
   tagline: string;
-  businessType?: 'supermarket' | 'garments' | 'pharmacy' | 'bakery' | 'spare_parts' | 'jewellery' | 'electronics' | 'hardware' | 'cosmetics' | 'beverages' | 'mobiles_accessories' | 'computers_laptops' | 'solar_shop' | 'restaurant_cafe';
+  businessType?: 'supermarket' | 'garments' | 'pharmacy' | 'bakery' | 'spare_parts' | 'jewellery' | 'electronics' | 'hardware' | 'cosmetics' | 'beverages' | 'mobiles_accessories' | 'computers_laptops' | 'solar_shop' | 'restaurant_cafe' | 'fast_food' | 'nan_shop' | 'sanitary_fittings' | 'home_appliances';
   address: string;
   phone: string;
   email: string;
@@ -127,6 +127,14 @@ export interface StoreSettings {
   enableAutoBackup: boolean;
   enableCloudSync: boolean;
   theme: 'light' | 'dark' | 'high_contrast';
+  isIndustryLocked?: boolean;
+  enabledPaymentMethods?: {
+    cash?: boolean;
+    card?: boolean;
+    online?: boolean;
+    wallet?: boolean;
+    credit_udhaar?: boolean;
+  };
 }
 
 export interface SyncLog {

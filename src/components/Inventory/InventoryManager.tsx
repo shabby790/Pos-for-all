@@ -620,9 +620,9 @@ export const InventoryManager: React.FC = () => {
                   <th className="p-3">Item Details</th>
                   <th className="p-3">Category</th>
                   <th className="p-3">SKU / Barcode</th>
-                  <th className="p-3">Buy Price</th>
-                  <th className="p-3">Sell Price</th>
-                  <th className="p-3">Margin</th>
+                  {settings.businessType !== 'sanitary_fittings' && <th className="p-3">Buy Price</th>}
+                  <th className="p-3">{settings.businessType === 'sanitary_fittings' ? 'Price (قیمت)' : 'Sell Price'}</th>
+                  {settings.businessType !== 'sanitary_fittings' && <th className="p-3">Margin</th>}
                   <th className="p-3">Stock Qty</th>
                   <th className="p-3 text-right">Actions</th>
                 </tr>
@@ -630,7 +630,7 @@ export const InventoryManager: React.FC = () => {
               <tbody className="divide-y divide-slate-800/60">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-500">
+                    <td colSpan={settings.businessType === 'sanitary_fittings' ? 6 : 8} className="p-8 text-center text-slate-500">
                       No products found.
                     </td>
                   </tr>
@@ -669,17 +669,21 @@ export const InventoryManager: React.FC = () => {
                           <div className="text-[10px] text-emerald-400/80">BC: {p.barcode}</div>
                         </td>
 
-                        <td className="p-3 font-semibold text-slate-300">
-                          {settings.currencySymbol} {p.buyPrice}
-                        </td>
+                        {settings.businessType !== 'sanitary_fittings' && (
+                          <td className="p-3 font-semibold text-slate-300">
+                            {settings.currencySymbol} {p.buyPrice}
+                          </td>
+                        )}
 
                         <td className="p-3 font-bold text-emerald-400">
                           {settings.currencySymbol} {p.sellPrice}
                         </td>
 
-                        <td className="p-3 text-emerald-300 font-semibold">
-                          +{settings.currencySymbol}{margin} ({marginPct}%)
-                        </td>
+                        {settings.businessType !== 'sanitary_fittings' && (
+                          <td className="p-3 text-emerald-300 font-semibold">
+                            +{settings.currencySymbol}{margin} ({marginPct}%)
+                          </td>
+                        )}
 
                         <td className="p-3">
                           <span
@@ -1245,24 +1249,37 @@ export const InventoryManager: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Cost / Buy Price ({settings.currencySymbol}) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.buyPrice}
-                    onChange={e => setFormData({ ...formData, buyPrice: Number(e.target.value) })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
-                  />
-                </div>
+                {settings.businessType !== 'sanitary_fittings' && (
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Cost / Buy Price ({settings.currencySymbol}) *</label>
+                    <input
+                      type="number"
+                      required
+                      value={formData.buyPrice}
+                      onChange={e => setFormData({ ...formData, buyPrice: Number(e.target.value) })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                )}
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Sale Price ({settings.currencySymbol}) *</label>
+                  <label className="block text-slate-300 font-semibold mb-1">
+                    {settings.businessType === 'sanitary_fittings'
+                      ? `Product Price / قیمت (${settings.currencySymbol}) *`
+                      : `Sale Price (${settings.currencySymbol}) *`}
+                  </label>
                   <input
                     type="number"
                     required
                     value={formData.sellPrice}
-                    onChange={e => setFormData({ ...formData, sellPrice: Number(e.target.value) })}
+                    onChange={e => {
+                      const val = Number(e.target.value);
+                      setFormData({
+                        ...formData,
+                        sellPrice: val,
+                        ...(settings.businessType === 'sanitary_fittings' ? { buyPrice: val } : {})
+                      });
+                    }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-100 font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
                   />
                 </div>

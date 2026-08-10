@@ -62,56 +62,26 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
     setTimeout(() => setIsSyncing(false), 800);
   };
 
-  const navItems = [
-    { id: 'pos', label: t('pos_terminal', language), icon: 'Store', permission: true },
-    { id: 'inventory', label: t('inventory', language), icon: 'Package', permission: userPermissions.canManageInventory },
-    { id: 'analytics', label: t('analytics', language), icon: 'BarChart3', permission: userPermissions.canViewAnalytics },
-    { id: 'customers', label: t('customers', language), icon: 'Users', permission: userPermissions.canManageCustomers },
-    { id: 'roles', label: t('roles', language), icon: 'Shield', permission: userPermissions.canManageRoles },
-    { id: 'settings', label: t('settings', language), icon: 'Settings', permission: userPermissions.canSettings },
-  ];
-
   return (
     <header className="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
           
           {/* Brand & Store Name */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-bold shadow-md shadow-emerald-500/20">
-              <Store className="w-6 h-6" />
+          <div className="flex lg:hidden items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold">
+              <Store className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-bold text-base sm:text-lg tracking-tight text-slate-100 truncate max-w-[160px] sm:max-w-xs">
-                  {settings.storeName}
-                </h1>
-                <span className="hidden md:inline-block text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                  POS PRO
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 hidden sm:block truncate max-w-[200px]">
-                {settings.tagline}
-              </p>
-            </div>
+            <h1 className="font-bold text-sm text-slate-100 truncate max-w-[120px]">
+              {settings.storeName}
+            </h1>
           </div>
 
-          {/* Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
-            {navItems.filter(item => item.permission).map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  activeTab === item.id
-                    ? 'bg-emerald-500 text-slate-950 font-semibold shadow-sm'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
+          <div className="hidden lg:block">
+            <h1 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {activeTab === 'pos' ? 'Terminal Active' : `${activeTab.replace('_', ' ')} Dashboard`}
+            </h1>
+          </div>
 
           {/* Controls Right Section */}
           <div className="flex items-center gap-2 sm:gap-3">
@@ -234,23 +204,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
 
           </div>
         </div>
-
-        {/* Mobile Navigation Bar */}
-        <nav className="flex lg:hidden overflow-x-auto py-2 gap-2 border-t border-slate-800 scrollbar-none">
-          {navItems.filter(item => item.permission).map(item => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
-                activeTab === item.id
-                  ? 'bg-emerald-500 text-slate-950 font-semibold'
-                  : 'bg-slate-800 text-slate-300 hover:text-white'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
       </div>
 
       {/* User / Role Switcher Modal */}

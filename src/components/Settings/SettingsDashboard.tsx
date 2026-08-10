@@ -14,7 +14,14 @@ import {
   Trash2,
   PackagePlus,
   Building2,
-  Sparkles
+  Sparkles,
+  Lock,
+  Unlock,
+  CreditCard,
+  Banknote,
+  Landmark,
+  Smartphone,
+  BookOpen
 } from 'lucide-react';
 import { StoreSettings } from '../../types';
 
@@ -37,6 +44,31 @@ export const SettingsDashboard: React.FC = () => {
   React.useEffect(() => {
     setFormState({ ...settings });
   }, [settings]);
+
+  const enabledPM = formState.enabledPaymentMethods || {
+    cash: true,
+    card: true,
+    online: true,
+    wallet: true,
+    credit_udhaar: true,
+  };
+
+  const togglePaymentMethod = (method: 'cash' | 'card' | 'online' | 'wallet' | 'credit_udhaar') => {
+    const current = formState.enabledPaymentMethods || {
+      cash: true,
+      card: true,
+      online: true,
+      wallet: true,
+      credit_udhaar: true,
+    };
+    setFormState({
+      ...formState,
+      enabledPaymentMethods: {
+        ...current,
+        [method]: current[method] === false ? true : false,
+      },
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,15 +129,52 @@ export const SettingsDashboard: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">Business Industry / Store Type</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-slate-300 font-semibold">Business Industry / Store Type</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextLocked = !formState.isIndustryLocked;
+                    setFormState({ ...formState, isIndustryLocked: nextLocked });
+                  }}
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 transition-all ${
+                    formState.isIndustryLocked
+                      ? 'bg-amber-950/80 border-amber-500/50 text-amber-300 hover:bg-amber-900'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                  }`}
+                  title={formState.isIndustryLocked ? "Industry locked. Click to unlock" : "Click to lock industry selection"}
+                >
+                  {formState.isIndustryLocked ? (
+                    <>
+                      <Lock className="w-3 h-3 text-amber-400" />
+                      <span>Industry Locked</span>
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="w-3 h-3 text-slate-400" />
+                      <span>Lock Selection</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-2">
                 <select
+                  disabled={formState.isIndustryLocked}
                   value={formState.businessType || 'supermarket'}
                   onChange={e => setFormState({ ...formState, businessType: e.target.value as any })}
-                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
+                  className={`flex-1 border rounded-xl px-3 py-2 text-emerald-400 font-bold focus:outline-none ${
+                    formState.isIndustryLocked
+                      ? 'bg-slate-900 border-slate-800 opacity-60 cursor-not-allowed text-slate-400'
+                      : 'bg-slate-950 border-slate-800 focus:border-emerald-500'
+                  }`}
                 >
                   <option value="supermarket">🛒 Supermarket / Grocery / Kiryana Store</option>
+                  <option value="home_appliances">📺 Home Appliances (TV, Refrigerator, AC, Washing Machine, Oven, Heater)</option>
+                  <option value="sanitary_fittings">🚰 Sanitary Fittings, Water Pumps & Plumbing</option>
                   <option value="restaurant_cafe">🍔 Restaurant, Fast Food & Cafe POS</option>
+                  <option value="fast_food">🍕 Pizza, Burger & Fries Shop (Specialized Fast Food)</option>
+                  <option value="nan_shop">🥯 Nan Shop & Tandoor (Specialized Token System)</option>
                   <option value="solar_shop">☀️ Solar Energy Shop & System Solutions</option>
                   <option value="beverages">🥤 Beverages, Cold Drinks & Water Mart</option>
                   <option value="garments">👕 Garments, Boutique & Apparel Shop</option>
@@ -121,16 +190,30 @@ export const SettingsDashboard: React.FC = () => {
 
                 <button
                   type="button"
+                  disabled={formState.isIndustryLocked}
                   onClick={() => loadIndustryPreset(formState.businessType || 'supermarket')}
-                  className="px-3 py-2 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shrink-0"
-                  title="Load sample inventory items & categories for selected business type"
+                  className={`px-3 py-2 border font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shrink-0 ${
+                    formState.isIndustryLocked
+                      ? 'bg-slate-900 border-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
+                      : 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500/50 text-emerald-300'
+                  }`}
+                  title={formState.isIndustryLocked ? "Unlock industry selection to load preset items" : "Load sample inventory items & categories for selected business type"}
                 >
                   <PackagePlus className="w-4 h-4 text-emerald-400" />
                   <span>Load Preset Demo Items</span>
                 </button>
               </div>
+
               <p className="text-[11px] text-slate-400 mt-1">
-                Select your industry and click <span className="text-emerald-400 font-semibold">"Load Preset Demo Items"</span> to automatically populate products & categories for your store type.
+                {formState.isIndustryLocked ? (
+                  <span className="text-amber-400 flex items-center gap-1">
+                    🔒 <strong>Industry preset is currently LOCKED.</strong> Nobody can change or overwrite store products until unlocked.
+                  </span>
+                ) : (
+                  <span>
+                    Select your industry and click <span className="text-emerald-400 font-semibold">"Load Preset Demo Items"</span> to automatically populate products & categories for your store type. Click <span className="text-amber-400 font-semibold">"Lock Selection"</span> to lock it permanently for this client.
+                  </span>
+                )}
               </p>
             </div>
 
@@ -237,6 +320,140 @@ export const SettingsDashboard: React.FC = () => {
                 onChange={e => setFormState({ ...formState, receiptFooter: e.target.value })}
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-emerald-500"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Allowed Payment Methods Control (ادائیگی کے ذرائع کا ایڈمن کنٹرول) */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div className="border-b border-slate-800 pb-3">
+            <h3 className="font-bold text-sm text-emerald-400 flex items-center gap-2">
+              <CreditCard className="w-4 h-4" /> Allowed Payment Wasooli Options (ادائیگی کے ذرائع کا ایڈمن کنٹرول)
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Admin control: Hide or unhide payment options during POS terminal checkout (کیشیئر فارم پر جن ادائیگی کے طریقوں کو آن رکھیں گے صرف وہی نظر آئیں گے)
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {/* Cash */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-500/10 rounded-lg">
+                  <Banknote className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-200 block">Cash (نقد)</span>
+                  <span className="text-[10px] text-slate-400">Counter Cash Payment</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => togglePaymentMethod('cash')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                  enabledPM.cash !== false
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-500 border-slate-700'
+                }`}
+              >
+                {enabledPM.cash !== false ? 'ACTIVE (آن)' : 'HIDDEN (آف)'}
+              </button>
+            </div>
+
+            {/* Card / ATM */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <CreditCard className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-200 block">ATM Card (کارڈ مشین)</span>
+                  <span className="text-[10px] text-slate-400">Debit / Credit Card Swipe</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => togglePaymentMethod('card')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                  enabledPM.card !== false
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-500 border-slate-700'
+                }`}
+              >
+                {enabledPM.card !== false ? 'ACTIVE (آن)' : 'HIDDEN (آف)'}
+              </button>
+            </div>
+
+            {/* Online / Bank Transfer */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-cyan-500/10 rounded-lg">
+                  <Landmark className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-200 block">Online / Bank Transfer</span>
+                  <span className="text-[10px] text-slate-400">Bank / Raast / Online</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => togglePaymentMethod('online')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                  enabledPM.online !== false
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-500 border-slate-700'
+                }`}
+              >
+                {enabledPM.online !== false ? 'ACTIVE (آن)' : 'HIDDEN (آف)'}
+              </button>
+            </div>
+
+            {/* Mobile Wallet */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-500/10 rounded-lg">
+                  <Smartphone className="w-4 h-4 text-indigo-400" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-200 block">Mobile Wallet</span>
+                  <span className="text-[10px] text-slate-400">EasyPaisa / JazzCash</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => togglePaymentMethod('wallet')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                  enabledPM.wallet !== false
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-500 border-slate-700'
+                }`}
+              >
+                {enabledPM.wallet !== false ? 'ACTIVE (آن)' : 'HIDDEN (آف)'}
+              </button>
+            </div>
+
+            {/* Customer Credit / Udhaar */}
+            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <BookOpen className="w-4 h-4 text-amber-400" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-200 block">Customer Credit / Udhaar</span>
+                  <span className="text-[10px] text-slate-400">Add to Customer Ledger</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => togglePaymentMethod('credit_udhaar')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                  enabledPM.credit_udhaar !== false
+                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                    : 'bg-slate-800 text-slate-500 border-slate-700'
+                }`}
+              >
+                {enabledPM.credit_udhaar !== false ? 'ACTIVE (آن)' : 'HIDDEN (آف)'}
+              </button>
             </div>
           </div>
         </div>

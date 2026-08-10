@@ -259,7 +259,8 @@ export const initialStoreSettings: StoreSettings = {
   enableSound: true,
   enableAutoBackup: true,
   enableCloudSync: true,
-  theme: 'light'
+  theme: 'light',
+  isIndustryLocked: false
 };
 
 // Past sales dummy data generator for analytical charts

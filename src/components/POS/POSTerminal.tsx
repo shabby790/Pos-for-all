@@ -179,6 +179,17 @@ export const POSTerminal: React.FC = () => {
   const taxAmount = Math.round((totalAfterDiscount * settings.taxRatePercent) / 100);
   const grandTotal = Math.round(totalAfterDiscount + taxAmount);
 
+  // Filter categories by business type if applicable
+  const filteredCategories = categories.filter(cat => {
+    if (settings.businessType === 'nan_shop') {
+      return cat.id.startsWith('cat_nan_');
+    }
+    // If not nan_shop, but another specific business type, we could filter too.
+    // For now, if it's nan_shop, we strictly filter.
+    // Otherwise show all (which is the current behavior for other types)
+    return true;
+  });
+
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] bg-slate-950 text-slate-100 overflow-hidden overflow-x-hidden max-w-full w-full relative">
       
@@ -325,7 +336,7 @@ export const POSTerminal: React.FC = () => {
           >
             {t('all_categories', language)}
           </button>
-          {categories.map(cat => (
+          {filteredCategories.map(cat => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}

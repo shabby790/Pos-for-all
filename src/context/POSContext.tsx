@@ -185,6 +185,8 @@ interface POSContextType {
   // Role & Users
   usersList: User[];
   addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (user: User) => void;
+  deleteUser: (userId: string) => void;
   toggleUserActive: (userId: string) => void;
 
   // Backup & Reset
@@ -714,6 +716,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addProduct = async (prodData: Omit<Product, 'id'>) => {
     const id = 'prod_' + Date.now();
     const newProd: Product = { ...prodData, id };
+    setProducts(prev => [newProd, ...prev]);
     try {
       await setDoc(doc(db, 'products', id), sanitizeForFirestore(newProd));
       addNotification('Product Added', `${newProd.name} added to cloud inventory.`, 'system');
@@ -723,6 +726,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateProduct = async (prod: Product) => {
+    setProducts(prev => prev.map(p => p.id === prod.id ? prod : p));
     try {
       await setDoc(doc(db, 'products', prod.id), sanitizeForFirestore(prod));
     } catch (error) {
@@ -731,6 +735,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteProduct = async (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
     try {
       await deleteDoc(doc(db, 'products', id));
     } catch (error) {
@@ -742,6 +747,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const p = products.find(prod => prod.id === id);
     if (!p) return;
     const updatedQty = Math.max(0, p.stockQuantity + deltaQty);
+    setProducts(prev => prev.map(prod => prod.id === id ? { ...prod, stockQuantity: updatedQty } : prod));
     try {
       await updateDoc(doc(db, 'products', id), { stockQuantity: updatedQty });
     } catch (error) {
@@ -753,6 +759,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addCategory = async (catData: Omit<Category, 'id'>) => {
     const id = 'cat_' + Date.now();
     const newCat: Category = { ...catData, id };
+    setCategories(prev => [...prev, newCat]);
     try {
       await setDoc(doc(db, 'categories', id), sanitizeForFirestore(newCat));
     } catch (error) {
@@ -761,6 +768,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCategory = async (cat: Category) => {
+    setCategories(prev => prev.map(c => c.id === cat.id ? cat : c));
     try {
       await setDoc(doc(db, 'categories', cat.id), sanitizeForFirestore(cat));
     } catch (error) {
@@ -769,6 +777,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCategory = async (id: string) => {
+    setCategories(prev => prev.filter(c => c.id !== id));
     try {
       await deleteDoc(doc(db, 'categories', id));
     } catch (error) {
@@ -787,11 +796,13 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalSpent: 0,
       createdAt: new Date().toISOString().split('T')[0]
     };
+    setCustomers(prev => [...prev, newCust]);
     setDoc(doc(db, 'customers', id), sanitizeForFirestore(newCust)).catch(error => handleFirestoreError(error, OperationType.WRITE, `customers/${id}`));
     return newCust;
   };
 
   const updateCustomer = async (cust: Customer) => {
+    setCustomers(prev => prev.map(c => c.id === cust.id ? cust : c));
     try {
       await setDoc(doc(db, 'customers', cust.id), sanitizeForFirestore(cust));
     } catch (error) {
@@ -803,6 +814,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const c = customers.find(cust => cust.id === customerId);
     if (!c) return;
     const newBal = Math.max(0, c.outstandingBalance - amount);
+    setCustomers(prev => prev.map(cust => cust.id === customerId ? { ...cust, outstandingBalance: newBal } : cust));
     try {
       await updateDoc(doc(db, 'customers', customerId), { outstandingBalance: newBal });
       addNotification('Udhaar Payment Received', `Payment of ${settings.currencySymbol}${amount} recorded.`, 'system');
@@ -815,18 +827,49 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addUser = async (userData: Omit<User, 'id'>) => {
     const id = 'usr_' + Date.now();
     const newUser: User = { ...userData, id };
+    setUsersList(prev => [...prev, newUser]);
     try {
       await setDoc(doc(db, 'users', id), sanitizeForFirestore(newUser));
+      addNotification('Staff Added', `${newUser.name} created.`, 'system');
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `users/${id}`);
+    }
+  };
+
+  const updateUser = async (updatedUser: User) => {
+    setUsersList(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    if (currentUser.id === updatedUser.id) {
+      setCurrentUser(updatedUser);
+    }
+    try {
+      await setDoc(doc(db, 'users', updatedUser.id), sanitizeForFirestore(updatedUser));
+      addNotification('User Updated', `Staff account for ${updatedUser.name} updated.`, 'system');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${updatedUser.id}`);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    if (usersList.length <= 1) {
+      alert('Cannot delete the last remaining staff account!');
+      return;
+    }
+    setUsersList(prev => prev.filter(u => u.id !== userId));
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+      addNotification('User Removed', `Staff account removed.`, 'system');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `users/${userId}`);
     }
   };
 
   const toggleUserActive = async (userId: string) => {
     const u = usersList.find(user => user.id === userId);
     if (!u) return;
+    const newStatus = !u.active;
+    setUsersList(prev => prev.map(user => user.id === userId ? { ...user, active: newStatus } : user));
     try {
-      await updateDoc(doc(db, 'users', userId), { active: !u.active });
+      await updateDoc(doc(db, 'users', userId), { active: newStatus });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
     }
@@ -982,13 +1025,23 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadIndustryPreset = async (businessType: string) => {
     const template = industryTemplates[businessType];
     if (template) {
-      setProducts(template.products);
-      setCategories(template.categories);
+      // Preserve user custom products and categories so user-added items are NEVER hidden or lost
+      const templateIds = new Set(template.products.map(p => p.id));
+      const customProductsToKeep = products.filter(p => !templateIds.has(p.id));
+      const mergedProducts = [...customProductsToKeep, ...template.products];
+
+      const templateCatIds = new Set(template.categories.map(c => c.id));
+      const customCatsToKeep = categories.filter(c => !templateCatIds.has(c.id));
+      const mergedCategories = [...customCatsToKeep, ...template.categories];
+
+      setProducts(mergedProducts);
+      setCategories(mergedCategories);
       const updatedSettings: StoreSettings = {
         ...settings,
         businessType: businessType as any,
-        storeName: template.name,
-        tagline: template.tagline
+        // Only update name/tagline if the current ones are generic/empty, otherwise keep user's custom identity
+        storeName: (settings.storeName === '' || settings.storeName === 'My Store' || settings.storeName === 'Smart POS Studio' || settings.storeName.includes('Al-Madina')) ? template.name : settings.storeName,
+        tagline: (settings.tagline === '' || settings.tagline === 'Your Business Tagline' || settings.tagline.includes('Premium')) ? template.tagline : settings.tagline
       };
       setSettings(updatedSettings);
       setCart([]);
@@ -996,8 +1049,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       try {
         const batch = writeBatch(db);
-        template.products.forEach(p => batch.set(doc(db, 'products', p.id), sanitizeForFirestore(p)));
-        template.categories.forEach(c => batch.set(doc(db, 'categories', c.id), sanitizeForFirestore(c)));
+        mergedProducts.forEach(p => batch.set(doc(db, 'products', p.id), sanitizeForFirestore(p)));
+        mergedCategories.forEach(c => batch.set(doc(db, 'categories', c.id), sanitizeForFirestore(c)));
         batch.set(doc(db, 'settings', 'store_config'), sanitizeForFirestore(updatedSettings));
         await batch.commit();
       } catch (err) {
@@ -1005,7 +1058,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       sounds.playSuccess();
-      alert(`✅ Loaded sample catalog for "${template.name}" successfully! (${template.products.length} Items & ${template.categories.length} Categories synced to cloud DB)`);
+      alert(`✅ Loaded sample catalog for "${template.name}"! (${template.products.length} Preset Items synced. Your custom added products are 100% safe and preserved!)`);
     }
   };
 
@@ -1089,6 +1142,8 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         collectUdhaarPayment,
         usersList,
         addUser,
+        updateUser,
+        deleteUser,
         toggleUserActive,
         exportBackupData,
         importBackupData,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { POSProvider, usePOS } from './context/POSContext';
 import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
 import { POSTerminal } from './components/POS/POSTerminal';
 import { InventoryManager } from './components/Inventory/InventoryManager';
 import { AnalyticsDashboard } from './components/Analytics/AnalyticsDashboard';
@@ -24,21 +25,28 @@ function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950 overflow-x-hidden max-w-full w-full">
-      <Header
+    <div className="min-h-screen bg-slate-950 font-sans text-slate-100 flex antialiased selection:bg-emerald-500 selection:text-slate-950 overflow-hidden max-w-full w-full">
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        openNotifications={() => setIsNotifOpen(true)}
       />
 
-      <main className="flex-1 overflow-y-auto overflow-x-hidden max-w-full w-full">
-        {activeTab === 'pos' && <POSTerminal />}
-        {activeTab === 'inventory' && userPermissions.canManageInventory && <InventoryManager />}
-        {activeTab === 'analytics' && userPermissions.canViewAnalytics && <AnalyticsDashboard />}
-        {activeTab === 'customers' && userPermissions.canManageCustomers && <CustomerManager />}
-        {activeTab === 'roles' && userPermissions.canManageRoles && <RoleManager />}
-        {activeTab === 'settings' && userPermissions.canSettings && <SettingsDashboard />}
-      </main>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Header
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          openNotifications={() => setIsNotifOpen(true)}
+        />
+
+        <main className="flex-1 overflow-y-auto overflow-x-hidden max-w-full w-full bg-slate-950/50">
+          {activeTab === 'pos' && <POSTerminal />}
+          {activeTab === 'inventory' && userPermissions.canManageInventory && <InventoryManager />}
+          {activeTab === 'analytics' && userPermissions.canViewAnalytics && <AnalyticsDashboard />}
+          {activeTab === 'customers' && userPermissions.canManageCustomers && <CustomerManager />}
+          {activeTab === 'roles' && userPermissions.canManageRoles && <RoleManager />}
+          {activeTab === 'settings' && userPermissions.canSettings && <SettingsDashboard />}
+        </main>
+      </div>
 
       <NotificationDrawer
         isOpen={isNotifOpen}

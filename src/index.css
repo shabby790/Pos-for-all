@@ -27,11 +27,7 @@ html, body {
     overflow: visible !important;
   }
 
-  #root > *:not(#printable-barcode-sheet) {
-    display: none !important;
-  }
-
-  /* Hide app navigation headers, sidebars, modals if printing current window */
+  /* Hide app navigation headers, sidebars, buttons during direct print */
   .no-print, header, nav, aside, button, .modal-backdrop {
     display: none !important;
   }

@@ -15,7 +15,8 @@ import {
   Terminal,
   ShieldCheck,
   Zap,
-  QrCode
+  QrCode,
+  Landmark
 } from 'lucide-react';
 import { Customer, PaymentMethod, Sale } from '../../types';
 
@@ -54,7 +55,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, gra
   useEffect(() => {
     setTenderedText(grandTotal.toString());
     setErrorMsg(null);
-  }, [grandTotal, isOpen]);
+
+    const enabled = settings.enabledPaymentMethods || { cash: true, card: true, online: true, wallet: true, credit_udhaar: true };
+    const isCurrentActive = 
+      (paymentMethod === 'cash' && enabled.cash !== false) ||
+      (paymentMethod === 'card' && enabled.card !== false) ||
+      (paymentMethod === 'online' && enabled.online !== false) ||
+      (paymentMethod === 'wallet' && enabled.wallet !== false) ||
+      (paymentMethod === 'credit_udhaar' && enabled.credit_udhaar !== false);
+
+    if (!isCurrentActive) {
+      if (enabled.cash !== false) setPaymentMethod('cash');
+      else if (enabled.card !== false) setPaymentMethod('card');
+      else if (enabled.online !== false) setPaymentMethod('online');
+      else if (enabled.wallet !== false) setPaymentMethod('wallet');
+      else if (enabled.credit_udhaar !== false) setPaymentMethod('credit_udhaar');
+    }
+  }, [grandTotal, isOpen, settings.enabledPaymentMethods]);
 
   if (!isOpen) return null;
 
@@ -91,11 +108,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, gra
     const finalTendered = paymentMethod === 'cash' ? numTendered : grandTotal;
 
     const paymentMetaData = {
-      cardDetails: paymentMethod === 'card' ? {
-        cardType,
+      cardDetails: (paymentMethod === 'card' || paymentMethod === 'online') ? {
+        cardType: paymentMethod === 'online' ? (cardType || 'Bank Transfer') : cardType,
         last4Digits: last4Digits || '4321',
-        authCodeRef: authCodeRef || `AUTH-${Math.floor(100000 + Math.random() * 900000)}`,
-        terminalId: terminalId || 'POS Machine #1'
+        authCodeRef: authCodeRef || `TRX-${Math.floor(100000 + Math.random() * 900000)}`,
+        terminalId: terminalId || (paymentMethod === 'online' ? 'Online Bank / Raast' : 'POS Machine #1')
       } : undefined,
       walletDetails: paymentMethod === 'wallet' ? {
         provider: walletProvider,
@@ -195,60 +212,83 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, gra
           
           {/* Payment Method Tabs */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-2">Payment Option:</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className="block text-xs font-semibold text-slate-300 mb-2">Payment Wasooli Option:</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('cash')}
-                className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
-                  paymentMethod === 'cash'
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
-                    : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <Banknote className="w-4 h-4" />
-                <span>{t('pay_cash', language)}</span>
-              </button>
+              {(settings.enabledPaymentMethods?.cash !== false) && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('cash')}
+                  className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
+                    paymentMethod === 'cash'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
+                      : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <Banknote className="w-4 h-4 shrink-0" />
+                  <span>{t('pay_cash', language)}</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
-                  paymentMethod === 'card'
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
-                    : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>{t('pay_card', language)}</span>
-              </button>
+              {(settings.enabledPaymentMethods?.card !== false) && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('card')}
+                  className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
+                    paymentMethod === 'card'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
+                      : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4 shrink-0 text-blue-400" />
+                  <span>ATM / Card Swipe</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('wallet')}
-                className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
-                  paymentMethod === 'wallet'
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
-                    : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <Smartphone className="w-4 h-4" />
-                <span>Mobile Wallet</span>
-              </button>
+              {(settings.enabledPaymentMethods?.online !== false) && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('online')}
+                  className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
+                    paymentMethod === 'online'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
+                      : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <Landmark className="w-4 h-4 shrink-0 text-cyan-400" />
+                  <span>Online / Bank</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('credit_udhaar')}
-                className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
-                  paymentMethod === 'credit_udhaar'
-                    ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
-                    : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>{t('pay_udhaar', language)}</span>
-              </button>
+              {(settings.enabledPaymentMethods?.wallet !== false) && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('wallet')}
+                  className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
+                    paymentMethod === 'wallet'
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md'
+                      : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4 shrink-0 text-indigo-400" />
+                  <span>Mobile Wallet</span>
+                </button>
+              )}
+
+              {(settings.enabledPaymentMethods?.credit_udhaar !== false) && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('credit_udhaar')}
+                  className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-semibold transition-all ${
+                    paymentMethod === 'credit_udhaar'
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                      : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4 shrink-0 text-amber-400" />
+                  <span>{t('pay_udhaar', language)}</span>
+                </button>
+              )}
 
             </div>
           </div>
@@ -349,6 +389,59 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, gra
                 )}
               </div>
 
+            </div>
+          )}
+
+          {/* Online Bank Transfer Payment Details */}
+          {paymentMethod === 'online' && (
+            <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3.5">
+              <div className="flex items-center gap-2 border-b border-slate-700/80 pb-2">
+                <Landmark className="w-5 h-5 text-cyan-400 shrink-0" />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-100">Online / Bank Transfer Wasooli (آن لائن / بینک ٹرانسفر)</h4>
+                  <p className="text-[10px] text-slate-400">Direct bank transfer, Raast, or online payment receipt details</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bank / Service Name (بینک / ایپ):</label>
+                  <input
+                    type="text"
+                    value={terminalId}
+                    onChange={e => setTerminalId(e.target.value)}
+                    placeholder="e.g. Meezan Bank / HBL / Raast"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">Sender Account Title / Name:</label>
+                  <input
+                    type="text"
+                    value={cardType}
+                    onChange={e => setCardType(e.target.value)}
+                    placeholder="e.g. Ali Raza"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Transaction Ref / TRX ID (ٹرانزیکشن آئی ڈی):</label>
+                <input
+                  type="text"
+                  value={authCodeRef}
+                  onChange={e => setAuthCodeRef(e.target.value)}
+                  placeholder="e.g. TRX-87291045"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:border-cyan-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="p-2.5 bg-cyan-950/30 border border-cyan-500/30 rounded-lg text-[11px] text-cyan-200 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>Confirm transfer of <strong>{settings.currencySymbol}{grandTotal}</strong> in bank account before approving.</span>
+              </div>
             </div>
           )}
 
