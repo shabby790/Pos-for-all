@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { usePOS } from '../../context/POSContext';
 import { t } from '../../utils/i18n';
+import { sounds } from '../../utils/sound';
 import {
   Settings,
   Store,
@@ -21,14 +22,37 @@ import {
   Banknote,
   Landmark,
   Smartphone,
-  BookOpen
+  BookOpen,
+  Zap,
+  Check
 } from 'lucide-react';
 import { StoreSettings } from '../../types';
+
+const INDUSTRY_LIST = [
+  { id: 'supermarket', name: 'Supermarket / Grocery / Kiryana', icon: '🛒', defaultName: 'Bismillah Super Store' },
+  { id: 'home_appliances', name: 'Home Appliances (TV, AC, Oven, Refrigerator)', icon: '📺', defaultName: 'Al-Rehman Electronics & Appliances' },
+  { id: 'sanitary_fittings', name: 'Sanitary, Water Pumps & Plumbing', icon: '🚰', defaultName: 'Pak Sanitary & Hardware' },
+  { id: 'restaurant_cafe', name: 'Restaurant, Cafe & Dine-In POS', icon: '🍔', defaultName: 'Khyber Shinwari Restaurant' },
+  { id: 'fast_food', name: 'Pizza, Burger & Fast Food Shop', icon: '🍕', defaultName: 'Cheezious Fast Food' },
+  { id: 'nan_shop', name: 'Nan Shop & Tandoor Token System', icon: '🥯', defaultName: 'Al-Madina Tandoor & Nan Shop' },
+  { id: 'solar_shop', name: 'Solar Energy & Systems Shop', icon: '☀️', defaultName: 'Pak Solar Tech Solutions' },
+  { id: 'beverages', name: 'Beverages, Cold Drinks & Water Mart', icon: '🥤', defaultName: 'Cold Corner & Water Mart' },
+  { id: 'garments', name: 'Garments, Boutique & Clothes', icon: '👕', defaultName: 'Royal Garments & Boutique' },
+  { id: 'pharmacy', name: 'Pharmacy & Medical Store', icon: '💊', defaultName: 'Shaheen Pharmacy & Medical' },
+  { id: 'bakery', name: 'Bakery, Sweets & Cafe', icon: '🥐', defaultName: 'Gourmet Bakery & Sweets' },
+  { id: 'spare_parts', name: 'Auto Spare Parts & Hardware', icon: '🔧', defaultName: 'Master Auto Spare Parts' },
+  { id: 'jewellery', name: 'Jewellery & Gold Shop', icon: '💍', defaultName: 'Al-Anwar Jewellers & Gold' },
+  { id: 'electronics', name: 'General Electronics & Gadgets', icon: '⚡', defaultName: 'Galaxy Electronics Hub' },
+  { id: 'mobiles_accessories', name: 'Mobiles & Accessories Studio', icon: '📱', defaultName: 'Smart Mobile Zone' },
+  { id: 'computers_laptops', name: 'Laptops, Computers & Accessories', icon: '💻', defaultName: 'TechZone Laptops & Computers' },
+  { id: 'cosmetics', name: 'Cosmetics & Beauty Store', icon: '💄', defaultName: 'Glamour Beauty & Cosmetics' },
+];
 
 export const SettingsDashboard: React.FC = () => {
   const {
     language,
     settings,
+    savedIndustryProfiles,
     updateSettings,
     exportBackupData,
     importBackupData,
@@ -40,6 +64,8 @@ export const SettingsDashboard: React.FC = () => {
   const [formState, setFormState] = useState<StoreSettings>({ ...settings });
   const [savedSuccess, setSavedSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedProfile = savedIndustryProfiles ? savedIndustryProfiles[formState.businessType || 'supermarket'] : undefined;
 
   React.useEffect(() => {
     setFormState({ ...settings });
@@ -72,6 +98,7 @@ export const SettingsDashboard: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    sounds.playSuccess();
     updateSettings(formState);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2000);
@@ -110,6 +137,100 @@ export const SettingsDashboard: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         
+        {/* ⚡ 1-Click Saved Industry Store Profiles Manager */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/40 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+            <div>
+              <h3 className="font-bold text-base text-emerald-400 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-emerald-400 fill-emerald-400/20" />
+                <span>⚡ 1-Click Saved Store Profiles Switcher</span>
+              </h3>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Switch instantly between saved store profiles (e.g. Bismillah Super Store, Nan Shop, Electronics). All custom products & settings are automatically remembered!
+              </p>
+            </div>
+            <span className="text-[11px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full self-start sm:self-auto shrink-0">
+              💾 {Object.keys(savedIndustryProfiles || {}).length} Store Profiles Saved
+            </span>
+          </div>
+
+          {/* Quick Filter or Profile Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
+            {INDUSTRY_LIST.map((ind) => {
+              const savedProfile = savedIndustryProfiles ? savedIndustryProfiles[ind.id] : undefined;
+              const isActive = formState.businessType === ind.id;
+
+              return (
+                <div
+                  key={ind.id}
+                  className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between space-y-2.5 relative ${
+                    isActive
+                      ? 'bg-emerald-950/70 border-emerald-400 shadow-lg shadow-emerald-950/50 ring-1 ring-emerald-500/50'
+                      : savedProfile
+                      ? 'bg-slate-900/90 border-slate-700 hover:border-emerald-500/60'
+                      : 'bg-slate-950/60 border-slate-800/80'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-xs font-bold text-slate-100 truncate flex items-center gap-1.5">
+                        <span className="text-base leading-none">{ind.icon}</span>
+                        <span className="truncate">{ind.name}</span>
+                      </span>
+                      {isActive && (
+                        <span className="text-[9px] font-black bg-emerald-500 text-slate-950 px-2 py-0.5 rounded-full shrink-0 animate-pulse">
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs font-bold text-emerald-300 truncate mt-1">
+                      {savedProfile ? savedProfile.settings.storeName : ind.defaultName}
+                    </p>
+
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-1.5">
+                      <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">
+                        📦 {savedProfile ? savedProfile.products.length : 'Preset'} Items
+                      </span>
+                      <span className="bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">
+                        📁 {savedProfile ? savedProfile.categories.length : 'Preset'} Cats
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isActive || formState.isIndustryLocked}
+                    onClick={() => {
+                      sounds.playSuccess();
+                      loadIndustryPreset(ind.id);
+                    }}
+                    className={`w-full py-2 px-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                      isActive
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-default'
+                        : formState.isIndustryLocked
+                        ? 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                        : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-400 shadow-md shadow-emerald-500/20 active:scale-95'
+                    }`}
+                  >
+                    {isActive ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Active Store</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        <span>{savedProfile ? `1-Click Restore "${savedProfile.settings.storeName}"` : `1-Click Load ${ind.name.split('/')[0]}`}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Store Profile Section */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
           <h3 className="font-bold text-sm text-emerald-400 flex items-center gap-2">
@@ -195,26 +316,36 @@ export const SettingsDashboard: React.FC = () => {
                   className={`px-3 py-2 border font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shrink-0 ${
                     formState.isIndustryLocked
                       ? 'bg-slate-900 border-slate-800 text-slate-500 opacity-50 cursor-not-allowed'
+                      : selectedProfile
+                      ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-400 shadow-lg shadow-emerald-500/20'
                       : 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500/50 text-emerald-300'
                   }`}
-                  title={formState.isIndustryLocked ? "Unlock industry selection to load preset items" : "Load sample inventory items & categories for selected business type"}
+                  title={formState.isIndustryLocked ? "Unlock industry selection to switch profiles" : "Load or switch to this industry store profile"}
                 >
-                  <PackagePlus className="w-4 h-4 text-emerald-400" />
-                  <span>Load Preset Demo Items</span>
+                  <PackagePlus className="w-4 h-4" />
+                  <span>
+                    {selectedProfile
+                      ? `Restore "${selectedProfile.settings.storeName}" Saved Profile`
+                      : 'Load Industry Store Profile'}
+                  </span>
                 </button>
               </div>
 
-              <p className="text-[11px] text-slate-400 mt-1">
+              <div className="text-[11px] text-slate-400 mt-1">
                 {formState.isIndustryLocked ? (
                   <span className="text-amber-400 flex items-center gap-1">
-                    🔒 <strong>Industry preset is currently LOCKED.</strong> Nobody can change or overwrite store products until unlocked.
+                    🔒 <strong>Industry preset is currently LOCKED.</strong> Unlock to switch or load store profiles.
+                  </span>
+                ) : selectedProfile ? (
+                  <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                    💾 <strong>Saved Profile Available:</strong> "{selectedProfile.settings.storeName}" ({selectedProfile.products.length} products saved). Click button to restore!
                   </span>
                 ) : (
                   <span>
-                    Select your industry and click <span className="text-emerald-400 font-semibold">"Load Preset Demo Items"</span> to automatically populate products & categories for your store type. Click <span className="text-amber-400 font-semibold">"Lock Selection"</span> to lock it permanently for this client.
+                    Select an industry and click <span className="text-emerald-400 font-semibold">"Load Industry Store Profile"</span>. All edits made under each industry profile will be automatically saved and remembered!
                   </span>
                 )}
-              </p>
+              </div>
             </div>
 
             <div>

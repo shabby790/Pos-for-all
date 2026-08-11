@@ -35,6 +35,7 @@ import {
   query, 
   orderBy, 
   deleteDoc,
+  getDocs,
   getDocFromServer,
   writeBatch,
   updateDoc
@@ -67,8 +68,23 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errCode = (error as any)?.code;
+  const errMsg = error instanceof Error ? error.message : String(error);
+
+  // If error is network/connection/offline/unavailable related, log warning gracefully & do not throw fatal error
+  if (
+    errCode === 'unavailable' ||
+    errCode === 'failed-precondition' ||
+    errMsg.includes('unavailable') ||
+    errMsg.includes('offline') ||
+    errMsg.includes('Could not reach Cloud Firestore')
+  ) {
+    console.warn(`[Firestore Offline/Unavailable] ${operationType} on ${path}: ${errMsg}`);
+    return;
+  }
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -190,6 +206,7 @@ interface POSContextType {
   toggleUserActive: (userId: string) => void;
 
   // Backup & Reset
+  savedIndustryProfiles: Record<string, { businessType: string; settings: StoreSettings; products: Product[]; categories: Category[]; updatedAt: string }>;
   exportBackupData: () => void;
   importBackupData: (jsonString: string) => boolean;
   resetToDummyData: () => void;
@@ -200,6 +217,7 @@ interface POSContextType {
 const POSContext = createContext<POSContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'SMART_POS_STUDIO_V1';
+const PROFILES_STORAGE_KEY = 'SMART_POS_INDUSTRY_PROFILES_V1';
 
 export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load saved state or default
@@ -215,6 +233,32 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   };
 
+  const loadSavedProfiles = () => {
+    try {
+      const saved = localStorage.getItem(PROFILES_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const cleaned: Record<string, any> = {};
+        Object.keys(parsed).forEach(type => {
+          const prof = parsed[type];
+          if (prof && prof.categories && prof.products) {
+            const catIds = new Set(prof.categories.map((c: Category) => c.id));
+            cleaned[type] = {
+              ...prof,
+              products: prof.products.filter((p: Product) => catIds.has(p.category))
+            };
+          } else {
+            cleaned[type] = prof;
+          }
+        });
+        return cleaned;
+      }
+    } catch (e) {
+      console.error('Failed to parse saved profiles:', e);
+    }
+    return {};
+  };
+
   const localData = loadInitialState();
 
   const [language, setLanguageState] = useState<Language>(localData?.language || 'ur_roman');
@@ -226,11 +270,38 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [sales, setSales] = useState<Sale[]>(localData?.sales || initialSalesHistory);
   const [holdCarts, setHoldCarts] = useState<HoldCart[]>(localData?.holdCarts || []);
   const [settings, setSettings] = useState<StoreSettings>(localData?.settings || initialStoreSettings);
+  const [savedIndustryProfiles, setSavedIndustryProfiles] = useState<Record<string, { businessType: string; settings: StoreSettings; products: Product[]; categories: Category[]; updatedAt: string }>>(loadSavedProfiles());
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartDiscountPercent, setCartDiscountPercent] = useState<number>(0);
   const [appliedPromo, setAppliedPromo] = useState<PromoCode | undefined>(undefined);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>(undefined);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Auto-save active store state into savedIndustryProfiles dictionary
+  useEffect(() => {
+    const currentType = settings.businessType || 'supermarket';
+    const currentCatIds = new Set(categories.map(c => c.id));
+    const cleanProds = products.filter(p => currentCatIds.has(p.category));
+
+    setSavedIndustryProfiles(prev => {
+      const updated = {
+        ...prev,
+        [currentType]: {
+          businessType: currentType,
+          settings,
+          products: cleanProds,
+          categories,
+          updatedAt: new Date().toISOString()
+        }
+      };
+      try {
+        localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('LocalStorage profile save error:', e);
+      }
+      return updated;
+    });
+  }, [settings, products, categories]);
   
   // Test Connection on Mount
   useEffect(() => {
@@ -239,8 +310,18 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await getDocFromServer(doc(db, 'test', 'connection'));
         console.log('Firebase connection validated');
       } catch (error) {
-        if(error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration.");
+        const errCode = (error as any)?.code;
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (
+          errCode === 'unavailable' ||
+          errCode === 'failed-precondition' ||
+          errMsg.includes('offline') ||
+          errMsg.includes('unavailable') ||
+          errMsg.includes('Could not reach Cloud Firestore')
+        ) {
+          console.warn("Firestore backend currently unreachable or offline. Operating with local persistent cache.");
+        } else {
+          console.error("Firebase connection check:", error);
         }
       }
     }
@@ -261,7 +342,10 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setProducts(initialProducts);
       }
       setIsLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
+    }, (error) => {
+      setIsLoading(false);
+      handleFirestoreError(error, OperationType.LIST, 'products');
+    });
 
     const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
       const cats: Category[] = [];
@@ -878,6 +962,7 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Settings
   const updateSettings = async (newSettings: Partial<StoreSettings>) => {
     const updated = { ...settings, ...newSettings };
+    setSettings(updated);
     try {
       await setDoc(doc(db, 'settings', 'store_config'), sanitizeForFirestore(updated));
     } catch (error) {
@@ -1023,42 +1108,121 @@ export const POSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const loadIndustryPreset = async (businessType: string) => {
-    const template = industryTemplates[businessType];
-    if (template) {
-      // Preserve user custom products and categories so user-added items are NEVER hidden or lost
-      const templateIds = new Set(template.products.map(p => p.id));
-      const customProductsToKeep = products.filter(p => !templateIds.has(p.id));
-      const mergedProducts = [...customProductsToKeep, ...template.products];
+    const currentType = settings.businessType || 'supermarket';
+    
+    // Clean current products by current categories before snapshotting
+    const currentCatIds = new Set(categories.map(c => c.id));
+    const cleanCurrentProducts = products.filter(p => currentCatIds.has(p.category));
 
-      const templateCatIds = new Set(template.categories.map(c => c.id));
-      const customCatsToKeep = categories.filter(c => !templateCatIds.has(c.id));
-      const mergedCategories = [...customCatsToKeep, ...template.categories];
+    // Snapshot current active state before switching
+    const profilesCopy = {
+      ...savedIndustryProfiles,
+      [currentType]: {
+        businessType: currentType,
+        settings,
+        products: cleanCurrentProducts,
+        categories,
+        updatedAt: new Date().toISOString()
+      }
+    };
 
-      setProducts(mergedProducts);
-      setCategories(mergedCategories);
-      const updatedSettings: StoreSettings = {
-        ...settings,
-        businessType: businessType as any,
-        // Only update name/tagline if the current ones are generic/empty, otherwise keep user's custom identity
-        storeName: (settings.storeName === '' || settings.storeName === 'My Store' || settings.storeName === 'Smart POS Studio' || settings.storeName.includes('Al-Madina')) ? template.name : settings.storeName,
-        tagline: (settings.tagline === '' || settings.tagline === 'Your Business Tagline' || settings.tagline.includes('Premium')) ? template.tagline : settings.tagline
-      };
-      setSettings(updatedSettings);
-      setCart([]);
-      setHoldCarts([]);
+    let targetProducts: Product[] = [];
+    let targetCategories: Category[] = [];
+    let targetSettings: StoreSettings;
+    let isRestored = false;
 
-      try {
-        const batch = writeBatch(db);
-        mergedProducts.forEach(p => batch.set(doc(db, 'products', p.id), sanitizeForFirestore(p)));
-        mergedCategories.forEach(c => batch.set(doc(db, 'categories', c.id), sanitizeForFirestore(c)));
-        batch.set(doc(db, 'settings', 'store_config'), sanitizeForFirestore(updatedSettings));
-        await batch.commit();
-      } catch (err) {
-        console.error('Error syncing preset to Firestore:', err);
+    // Check if we have a previously saved profile for this industry
+    if (profilesCopy[businessType]) {
+      const saved = profilesCopy[businessType];
+      targetCategories = saved.categories && saved.categories.length > 0 ? saved.categories : (industryTemplates[businessType]?.categories || []);
+      const targetCatIds = new Set(targetCategories.map(c => c.id));
+      targetProducts = (saved.products || []).filter(p => targetCatIds.has(p.category));
+
+      // Fallback if targetProducts was empty or contaminated
+      if (targetProducts.length === 0 && industryTemplates[businessType]?.products) {
+        targetProducts = industryTemplates[businessType].products;
       }
 
-      sounds.playSuccess();
-      alert(`✅ Loaded sample catalog for "${template.name}"! (${template.products.length} Preset Items synced. Your custom added products are 100% safe and preserved!)`);
+      targetSettings = {
+        ...saved.settings,
+        businessType: businessType as any
+      };
+      isRestored = true;
+    } else {
+      // Fallback to fresh template
+      const template = industryTemplates[businessType];
+      if (!template) return;
+      targetProducts = template.products;
+      targetCategories = template.categories;
+      targetSettings = {
+        ...settings,
+        businessType: businessType as any,
+        storeName: template.name,
+        tagline: template.tagline
+      };
+    }
+
+    // Keep profile dictionary updated with cleaned target products/categories
+    profilesCopy[businessType] = {
+      businessType,
+      settings: targetSettings,
+      products: targetProducts,
+      categories: targetCategories,
+      updatedAt: new Date().toISOString()
+    };
+
+    setSavedIndustryProfiles(profilesCopy);
+    try {
+      localStorage.setItem(PROFILES_STORAGE_KEY, JSON.stringify(profilesCopy));
+    } catch (e) {
+      console.error('LocalStorage write error:', e);
+    }
+
+    setProducts(targetProducts);
+    setCategories(targetCategories);
+    setSettings(targetSettings);
+    setCart([]);
+    setHoldCarts([]);
+
+    try {
+      // Fetch all existing product and category documents in Firestore
+      const existingProdsSnap = await getDocs(collection(db, 'products'));
+      const existingCatsSnap = await getDocs(collection(db, 'categories'));
+
+      const targetProdIds = new Set(targetProducts.map(p => p.id));
+      const targetCatIds = new Set(targetCategories.map(c => c.id));
+
+      const batch = writeBatch(db);
+
+      // Clean out Firestore documents from previous store profiles
+      existingProdsSnap.forEach(d => {
+        if (!targetProdIds.has(d.id)) {
+          batch.delete(doc(db, 'products', d.id));
+        }
+      });
+
+      existingCatsSnap.forEach(d => {
+        if (!targetCatIds.has(d.id)) {
+          batch.delete(doc(db, 'categories', d.id));
+        }
+      });
+
+      // Write target products, categories and settings
+      targetProducts.forEach(p => batch.set(doc(db, 'products', p.id), sanitizeForFirestore(p)));
+      targetCategories.forEach(c => batch.set(doc(db, 'categories', c.id), sanitizeForFirestore(c)));
+      batch.set(doc(db, 'settings', 'store_config'), sanitizeForFirestore(targetSettings));
+      batch.set(doc(db, 'settings', 'industry_profiles'), sanitizeForFirestore({ data: profilesCopy }));
+      await batch.commit();
+    } catch (err) {
+      console.error('Error syncing preset to Firestore:', err);
+    }
+
+    sounds.playSuccess();
+
+    if (isRestored) {
+      alert(`✅ Restored saved store profile for "${targetSettings.storeName}"!\nAll your custom prices, items, and settings for this store have been restored exactly as you saved them.`);
+    } else {
+      alert(`✅ Loaded catalog for "${targetSettings.storeName}"!\nAll future changes for this store will now be saved independently.`);
     }
   };
 

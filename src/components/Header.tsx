@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePOS } from '../context/POSContext';
 import { t } from '../utils/i18n';
+import { sounds } from '../utils/sound';
 import {
   Store,
   Wifi,
@@ -15,17 +16,42 @@ import {
   RefreshCw,
   Sparkles,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Settings,
+  Zap,
+  X,
+  Check
 } from 'lucide-react';
 import { Language, User } from '../types';
+
+const HEADER_INDUSTRIES = [
+  { id: 'supermarket', name: 'Supermarket / Grocery', icon: '🛒', defaultName: 'Bismillah Super Store' },
+  { id: 'home_appliances', name: 'Home Appliances', icon: '📺', defaultName: 'Al-Rehman Electronics' },
+  { id: 'sanitary_fittings', name: 'Sanitary & Plumbing', icon: '🚰', defaultName: 'Pak Sanitary & Hardware' },
+  { id: 'restaurant_cafe', name: 'Restaurant & Cafe', icon: '🍔', defaultName: 'Khyber Shinwari Restaurant' },
+  { id: 'fast_food', name: 'Pizza & Fast Food', icon: '🍕', defaultName: 'Cheezious Fast Food' },
+  { id: 'nan_shop', name: 'Nan Shop & Tandoor', icon: '🥯', defaultName: 'Al-Madina Tandoor & Nan Shop' },
+  { id: 'solar_shop', name: 'Solar Energy Shop', icon: '☀️', defaultName: 'Pak Solar Tech' },
+  { id: 'beverages', name: 'Beverages & Water Mart', icon: '🥤', defaultName: 'Cold Corner Water Mart' },
+  { id: 'garments', name: 'Garments & Boutique', icon: '👕', defaultName: 'Royal Garments' },
+  { id: 'pharmacy', name: 'Pharmacy & Medical', icon: '💊', defaultName: 'Shaheen Pharmacy' },
+  { id: 'bakery', name: 'Bakery & Sweets', icon: '🥐', defaultName: 'Gourmet Bakery' },
+  { id: 'spare_parts', name: 'Auto Spare Parts', icon: '🔧', defaultName: 'Master Auto Parts' },
+  { id: 'jewellery', name: 'Jewellery & Gold', icon: '💍', defaultName: 'Al-Anwar Jewellers' },
+  { id: 'electronics', name: 'General Electronics', icon: '⚡', defaultName: 'Galaxy Electronics' },
+  { id: 'mobiles_accessories', name: 'Mobiles & Accessories', icon: '📱', defaultName: 'Smart Mobile Zone' },
+  { id: 'computers_laptops', name: 'Laptops & Computers', icon: '💻', defaultName: 'TechZone Laptops' },
+  { id: 'cosmetics', name: 'Cosmetics & Beauty', icon: '💄', defaultName: 'Glamour Cosmetics' },
+];
 
 interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   openNotifications: () => void;
+  openProfileModal: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNotifications }) => {
+export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNotifications, openProfileModal }) => {
   const {
     language,
     setLanguage,
@@ -39,7 +65,9 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
     syncQueueCount,
     triggerCloudSync,
     notifications,
-    userPermissions
+    userPermissions,
+    savedIndustryProfiles,
+    loadIndustryPreset
   } = usePOS();
 
   const [showRoleModal, setShowRoleModal] = useState(false);
@@ -68,19 +96,62 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
           
           {/* Brand & Store Name */}
-          <div className="flex lg:hidden items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold">
-              <Store className="w-5 h-5" />
+          <div className="flex lg:hidden items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold shrink-0">
+              <Store className="w-4 h-4" />
             </div>
-            <h1 className="font-bold text-sm text-slate-100 truncate max-w-[120px]">
-              {settings.storeName}
-            </h1>
+            <div className="min-w-0">
+              <h1 className="font-bold text-xs sm:text-sm text-slate-100 truncate max-w-[120px] sm:max-w-xs leading-tight">
+                {settings.storeName}
+              </h1>
+              <p className="text-[10px] text-emerald-400 font-semibold truncate leading-none">
+                {settings.tagline || 'Smart POS'}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                sounds.playClick();
+                openProfileModal();
+              }}
+              className="px-2 py-1 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 rounded-lg text-[10px] font-bold flex items-center gap-1 shrink-0 ml-1 active:scale-95 transition-all shadow-sm"
+              title="1-Click Switch Store Profile"
+            >
+              <Zap className="w-3 h-3 text-emerald-400 fill-current animate-pulse" />
+              <span>Switch Profile</span>
+            </button>
           </div>
 
-          <div className="hidden lg:block">
-            <h1 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              {activeTab === 'pos' ? 'Terminal Active' : `${activeTab.replace('_', ' ')} Dashboard`}
-            </h1>
+          <div className="hidden lg:flex items-center gap-4">
+            <div className="flex items-center gap-2 pr-4 border-r border-slate-800">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold shrink-0">
+                <Store className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="font-bold text-sm text-slate-100 truncate max-w-[200px] leading-tight">
+                  {settings.storeName}
+                </h1>
+                <p className="text-[10px] text-emerald-400 font-semibold truncate leading-none">
+                  {settings.tagline || 'Smart POS'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <h1 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                {activeTab === 'pos' ? 'Terminal Active' : `${activeTab.replace('_', ' ')} Dashboard`}
+              </h1>
+              <button
+                onClick={() => {
+                  sounds.playClick();
+                  openProfileModal();
+                }}
+                className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-sm whitespace-nowrap"
+                title="1-Click Switch Saved Store Profile"
+              >
+                <Zap className="w-3.5 h-3.5 text-emerald-400 fill-current animate-pulse" />
+                <span>⚡ Switch Store Profile</span>
+              </button>
+            </div>
           </div>
 
           {/* Controls Right Section */}
@@ -88,9 +159,12 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
             
             {/* Online / Offline status badge */}
             <button
-              onClick={() => setIsOnline(!isOnline)}
+              onClick={() => {
+                sounds.playClick();
+                setIsOnline(!isOnline);
+              }}
               title="Click to toggle online/offline mode for testing"
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all active:scale-95 ${
                 isOnline
                   ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:bg-emerald-900/80'
                   : 'bg-amber-950/60 text-amber-300 border-amber-700/50 hover:bg-amber-900/80'
@@ -111,10 +185,13 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
 
             {/* Cloud Sync Status / Action Button */}
             <button
-              onClick={handleSyncClick}
+              onClick={() => {
+                sounds.playClick();
+                handleSyncClick();
+              }}
               disabled={isSyncing}
               title={isOnline ? "Cloud Sync Active & Connected (Click to sync)" : "Offline Mode (Sync paused)"}
-              className={`relative p-2 rounded-lg border transition-all flex items-center justify-center ${
+              className={`relative p-2 rounded-lg border transition-all flex items-center justify-center active:scale-95 ${
                 isSyncing
                   ? 'bg-slate-800 text-emerald-400 border-emerald-500/50'
                   : syncQueueCount > 0
@@ -139,8 +216,11 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
             {/* Language Selector Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setShowLangDropdown(!showLangDropdown)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200"
+                onClick={() => {
+                  sounds.playClick();
+                  setShowLangDropdown(!showLangDropdown);
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 active:scale-95 transition-all"
               >
                 <Globe className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="hidden md:inline">
@@ -156,10 +236,11 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
                     <button
                       key={l.code}
                       onClick={() => {
+                        sounds.playClick();
                         setLanguage(l.code);
                         setShowLangDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-700 transition-colors ${
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-700 transition-colors active:scale-95 ${
                         language === l.code ? 'text-emerald-400 font-semibold bg-slate-700/50' : 'text-slate-200'
                       }`}
                     >
@@ -173,8 +254,11 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
 
             {/* Notifications Bell */}
             <button
-              onClick={openNotifications}
-              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all"
+              onClick={() => {
+                sounds.playClick();
+                openNotifications();
+              }}
+              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition-all active:scale-95"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -184,10 +268,32 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, openNot
               )}
             </button>
 
+            {/* Store & Dashboard Settings Button */}
+            {userPermissions.canSettings && (
+              <button
+                onClick={() => {
+                  sounds.playClick();
+                  setActiveTab('settings');
+                }}
+                title="Store & Profile Settings"
+                className={`p-2 rounded-lg border transition-all flex items-center gap-1.5 active:scale-95 ${
+                  activeTab === 'settings'
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold shadow-lg shadow-emerald-500/20'
+                    : 'bg-slate-800 text-slate-300 hover:text-white border-slate-700/60 hover:bg-slate-700'
+                }`}
+              >
+                <Settings className="w-4 h-4 text-emerald-400" />
+                <span className="hidden xl:inline text-xs font-semibold">Store Profile Settings</span>
+              </button>
+            )}
+
             {/* Active User Avatar / Switch User */}
             <button
-              onClick={() => setShowRoleModal(true)}
-              className="flex items-center gap-2 px-2.5 py-1 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 rounded-xl transition-all text-left"
+              onClick={() => {
+                sounds.playClick();
+                setShowRoleModal(true);
+              }}
+              className="flex items-center gap-2 px-2.5 py-1 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 rounded-xl transition-all text-left active:scale-95"
             >
               <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs border border-emerald-500/40">
                 {currentUser.name.charAt(0)}

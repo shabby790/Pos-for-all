@@ -73,8 +73,14 @@ export const POSTerminal: React.FC = () => {
   // Item discount mode per product ('flat' = Rs, 'percent' = %)
   const [itemDiscountMode, setItemDiscountMode] = useState<Record<string, 'flat' | 'percent'>>({});
 
-  // Filter products by category & search query
-  const filteredProducts = products.filter(p => {
+  // Filter categories and products for the current active store
+  const validCategoryIds = new Set(categories.map(c => c.id));
+
+  // Filter base products by current store categories & active status
+  const storeProducts = products.filter(p => validCategoryIds.has(p.category) && p.isActive !== false);
+
+  // Filter store products by selected category & search query
+  const filteredProducts = storeProducts.filter(p => {
     const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
@@ -82,13 +88,15 @@ export const POSTerminal: React.FC = () => {
       p.name.toLowerCase().includes(query) ||
       p.sku.toLowerCase().includes(query) ||
       p.barcode.includes(query) ||
-      (p.nameUrdu && p.nameUrdu.includes(query));
+      (p.nameUrdu && p.nameUrdu.includes(query)) ||
+      (p.formulaName && p.formulaName.toLowerCase().includes(query)) ||
+      (p.supplierName && p.supplierName.toLowerCase().includes(query));
     return matchesCat && matchesSearch;
   });
 
   // Handle scanned barcode
   const handleBarcodeScanned = (code: string) => {
-    const found = products.find(p => p.barcode === code.trim() || p.sku.toLowerCase() === code.trim().toLowerCase());
+    const found = storeProducts.find(p => p.barcode === code.trim() || p.sku.toLowerCase() === code.trim().toLowerCase());
     if (found) {
       addToCart(found, 1);
     } else {
@@ -179,17 +187,6 @@ export const POSTerminal: React.FC = () => {
   const taxAmount = Math.round((totalAfterDiscount * settings.taxRatePercent) / 100);
   const grandTotal = Math.round(totalAfterDiscount + taxAmount);
 
-  // Filter categories by business type if applicable
-  const filteredCategories = categories.filter(cat => {
-    if (settings.businessType === 'nan_shop') {
-      return cat.id.startsWith('cat_nan_');
-    }
-    // If not nan_shop, but another specific business type, we could filter too.
-    // For now, if it's nan_shop, we strictly filter.
-    // Otherwise show all (which is the current behavior for other types)
-    return true;
-  });
-
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)] bg-slate-950 text-slate-100 overflow-hidden overflow-x-hidden max-w-full w-full relative">
       
@@ -239,7 +236,7 @@ export const POSTerminal: React.FC = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && searchQuery.trim()) {
                   const code = searchQuery.trim();
-                  const found = products.find(p => p.barcode === code || p.sku.toLowerCase() === code.toLowerCase() || p.name.toLowerCase().includes(code.toLowerCase()));
+                  const found = storeProducts.find(p => p.barcode === code || p.sku.toLowerCase() === code.toLowerCase() || p.name.toLowerCase().includes(code.toLowerCase()));
                   if (found) {
                     addToCart(found, 1);
                     setSearchQuery('');
@@ -261,7 +258,7 @@ export const POSTerminal: React.FC = () => {
             {/* Search Suggestions Dropdown */}
             {searchQuery.trim().length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-800">
-                {products
+                {storeProducts
                   .filter(p => 
                     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     (p.nameUrdu && p.nameUrdu.includes(searchQuery)) ||
@@ -301,7 +298,7 @@ export const POSTerminal: React.FC = () => {
                       </div>
                     </button>
                   ))}
-                {products.filter(p => 
+                {storeProducts.filter(p => 
                   p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   (p.nameUrdu && p.nameUrdu.includes(searchQuery)) ||
                   p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -336,7 +333,7 @@ export const POSTerminal: React.FC = () => {
           >
             {t('all_categories', language)}
           </button>
-          {filteredCategories.map(cat => (
+          {categories.map(cat => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
@@ -418,6 +415,18 @@ export const POSTerminal: React.FC = () => {
                       {product.nameUrdu && (
                         <p className="text-[10px] text-slate-400 truncate dir-rtl text-right mt-0.5">
                           {product.nameUrdu}
+                        </p>
+                      )}
+                      {product.formulaName && (
+                        <div className="mt-1">
+                          <span className="text-[9px] font-semibold text-cyan-300 bg-cyan-950/90 border border-cyan-800/80 px-1.5 py-0.5 rounded truncate max-w-full block">
+                            🧪 {product.formulaName}
+                          </span>
+                        </div>
+                      )}
+                      {product.supplierName && (
+                        <p className="text-[9px] text-purple-300/80 font-medium truncate mt-0.5">
+                          🏭 {product.supplierName}
                         </p>
                       )}
                       

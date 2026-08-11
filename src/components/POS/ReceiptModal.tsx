@@ -154,22 +154,24 @@ Thank you for shopping with us!`;
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl text-white my-8">
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl text-white my-auto max-h-[94vh] flex flex-col my-2 sm:my-8">
         
         {/* Actions Bar */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3 shrink-0">
           <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
             <CheckCircle className="w-5 h-5 text-emerald-400" />
             <span>Sale Success Receipt</span>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Thermal Paper Printable Receipt Container */}
-        <div className="bg-white text-slate-900 p-6 rounded-xl font-mono text-xs shadow-inner space-y-3 mb-4" ref={printRef}>
+        {/* Scrollable Receipt Area */}
+        <div className="overflow-y-auto flex-1 pr-0.5 custom-scrollbar mb-3">
+          {/* Thermal Paper Printable Receipt Container */}
+          <div className="bg-white text-slate-900 p-4 sm:p-6 rounded-xl font-mono text-xs shadow-inner space-y-3" ref={printRef}>
           
           {/* Header */}
           <div className="text-center space-y-1 border-b border-dashed border-slate-300 pb-3">
@@ -362,9 +364,10 @@ Thank you for shopping with us!`;
           )}
 
         </div>
+        </div>
 
         {/* Bottom Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 shrink-0 pt-2 border-t border-slate-800/80">
           <button
             onClick={handlePrint}
             className="py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"

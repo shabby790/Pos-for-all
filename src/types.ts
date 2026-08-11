@@ -45,6 +45,9 @@ export interface Product {
   reorderLevel: number;
   image?: string;
   description?: string;
+  formulaName?: string;
+  supplierName?: string;
+  isActive?: boolean; // Default true if undefined
 }
 
 export interface CartItem {
